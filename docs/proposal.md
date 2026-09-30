@@ -56,8 +56,8 @@ erDiagram
 | DELETE | /api/v1/users/{userId} | admin | completely deletes a user | 
 
 ## 5. Technical choices
-- **Database host:** Docker. When it comes to remote servers, Docker does well in running a database as well as an API. It's free, and it doesn't come with any extra cost. 
-- **OAuth2 provider:** Supbase. Supports Spring Data JPA which is going to be utlized in the API. 
+- **Database host:** 
+- **OAuth2 provider:** 
 - **Repo layout:** We'll split the API into two repositories. The API repository will be the backend, to which will store all the API routes, the database, as well as any other backend. The App repository will be utilized for Android Studio. It will cover Kotlin, and everything the frontend has to offer. 
 
 ## 6. Risks
