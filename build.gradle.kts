@@ -1,0 +1,36 @@
+plugins {
+	java
+	id("org.springframework.boot") version "4.1.1"
+	id("io.spring.dependency-management") version "1.1.7"
+	pmd
+}
+
+group = "com.example"
+version = "0.0.1-SNAPSHOT"
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(25)
+	}
+}
+
+pmd {
+    isConsoleOutput = true
+    toolVersion = "7.16.0"
+    rulesMinimumPriority = 5
+    ruleSets = listOf("category/java/errorprone.xml", "category/java/bestpractices.xml")
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation("org.springframework.boot:spring-boot-starter-webmvc")
+	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
+	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+tasks.withType<Test> {
+	useJUnitPlatform()
+}
