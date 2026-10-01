@@ -56,7 +56,7 @@ erDiagram
 | DELETE | /api/v1/users/{userId} | admin | completely deletes a user | 
 
 ## 5. Technical choices
-- **Database host:** Docker. It's a much easier way to store a remote server, and it serves well with groups who want to work on the project. Supabase is the database developer, and it will 
+- **Database host:** Supabase. It holds actual database hosting, so that the team could develop against the same schema. We won't have to rely on the SQLites. It also relies well with SpringBoot. 
 - **OAuth2 provider:** OAuth 2. Specifically Google, as we'll be working with Android Studio. It would be a lot easier to use Google's authentication and security than implementing a different one entirely. 
 - **Repo layout:** We'll split the API into two repositories. The API repository will be the backend, to which will store all the API routes, the database, as well as any other backend. The App repository will be utilized for Android Studio. It will cover Kotlin, and everything the frontend has to offer. 
 
@@ -67,7 +67,7 @@ erDiagram
 ## 7. Team and Sprint 1
 Project Board -> https://github.com/users/Niko-Proud/projects/1
 Alexander Trujillo: Setting up Database
-Victoria Ha: 
+Victoria Ha: Setting up Database
 Nikolii Proud: 
 Hyun Jeong Lim: Landing Pages
 Sprint 1 Due Date: October 10
