@@ -56,17 +56,18 @@ erDiagram
 | DELETE | /api/v1/users/{userId} | admin | completely deletes a user | 
 
 ## 5. Technical choices
-- **Database host:** 
-- **OAuth2 provider:** 
+- **Database host:** Docker. It's a much easier way to store a remote server, and it serves well with groups who want to work on the project. Supabase is the database developer, and it will 
+- **OAuth2 provider:** OAuth 2. Specifically Google, as we'll be working with Android Studio. It would be a lot easier to use Google's authentication and security than implementing a different one entirely. 
 - **Repo layout:** We'll split the API into two repositories. The API repository will be the backend, to which will store all the API routes, the database, as well as any other backend. The App repository will be utilized for Android Studio. It will cover Kotlin, and everything the frontend has to offer. 
 
 ## 6. Risks
-1. OAuth2 Integration: Implementing an API as a Resource Server that validates a token, rather than a cookies, may be an issue. We'll ensure that Android Studio would successfully generate tokens rather than cookies, 
+1. OAuth2 Integration: Implementing an API as a Resource Server that validates a token, rather than a cookies, may be an issue. We'll ensure that Android Studio would successfully generate tokens rather than cookies. 
 2. FDA Data structure: Relying on web scraping may break the backend if the HTML changes. If necessary, we could use mock JSON data if we reach a bottleneck. 
 
 ## 7. Team and Sprint 1
-Alexander Trujillo:
-Victoria Ha:
-Nikolii Proud:
-Hyun Jeong Lim: 
+Project Board -> https://github.com/users/Niko-Proud/projects/1
+Alexander Trujillo: Setting up Database
+Victoria Ha: 
+Nikolii Proud: 
+Hyun Jeong Lim: Landing Pages
 Sprint 1 Due Date: October 10
