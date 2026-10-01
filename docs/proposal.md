@@ -56,12 +56,18 @@ erDiagram
 | DELETE | /api/v1/users/{userId} | admin | completely deletes a user | 
 
 ## 5. Technical choices
-- **Database host:** 
-- **OAuth2 provider:** 
+- **Database host:** Supabase. It holds actual database hosting, so that the team could develop against the same schema. We won't have to rely on the SQLites. It also relies well with SpringBoot. 
+- **OAuth2 provider:** OAuth 2. Specifically Google, as we'll be working with Android Studio. It would be a lot easier to use Google's authentication and security than implementing a different one entirely. 
 - **Repo layout:** We'll split the API into two repositories. The API repository will be the backend, to which will store all the API routes, the database, as well as any other backend. The App repository will be utilized for Android Studio. It will cover Kotlin, and everything the frontend has to offer. 
 
 ## 6. Risks
-
+1. OAuth2 Integration: Implementing an API as a Resource Server that validates a token, rather than a cookies, may be an issue. We'll ensure that Android Studio would successfully generate tokens rather than cookies. 
+2. FDA Data structure: Relying on web scraping may break the backend if the HTML changes. If necessary, we could use mock JSON data if we reach a bottleneck. 
 
 ## 7. Team and Sprint 1
-Who owns what in Sprint 1. Link your Project board and Sprint 1 milestone.
+Project Board -> https://github.com/users/Niko-Proud/projects/1
+Alexander Trujillo: Setting up Database
+Victoria Ha: Setting up Database
+Nikolii Proud: 
+Hyun Jeong Lim: Landing Pages
+Sprint 1 Due Date: October 10
