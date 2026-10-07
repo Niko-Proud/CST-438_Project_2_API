@@ -6,17 +6,17 @@
 openapi: 3.0.3
 
 info:
-  title: Workout Tracker API
+  title: Brainworm Food Recall API
   version: 1.0.0
   description: |
-    Example contract for a workout tracker. Users log workouts made of exercises.
-    Every error uses RFC 9457 Problem Details (see components/schemas/Problem).
+    REST API for Brainworm, a food safety service that cross-references user food registries
+    against FDA food recalls and triggers alerts for contaminated items.
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
   contact:
-    name: Team 00
-    url: https://github.com/OWNER/REPO
+    name: Team 07
+    url: https://github.com/Niko-Proud/CST-438_Project_2_API
 
 servers:
   - url: http://localhost:8080
@@ -29,213 +29,241 @@ security:
   - bearerAuth: []
 
 tags:
-  - name: Workouts
-    description: A user's own workouts
-  - name: Exercises
-    description: The shared exercise catalog
   - name: Users
-    description: The signed-in user's own account
+    description: The signed-in user's own account profile
+  - name: Registry
+    description: A user's personal monitored food registry
+  - name: Recalls
+    description: Official FDA recalled food alerts matching or relevant to user items
   - name: Admin
     description: Admin-only user management
 
 paths:
-  /api/v1/workouts:
+  /api/v1/users/me:
     get:
-      tags: [Workouts]
-      operationId: listMyWorkouts
-      summary: List my workouts (paginated, sortable)
+      tags: [Users]
+      operationId: getCurrentUser
+      summary: Retrieve the currently authenticated user's profile (user role)
+      description: |
+        **Role:** `user` (any authenticated user).
+        Validates the Google OAuth2 Bearer token and returns the caller's `User` record (`id`, `user`, `isAdmin`).
+        *(Note: Passwords are never stored or returned because authentication uses OAuth2 + PKCE).*
+      responses:
+        '200':
+          description: The currently signed-in user's profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/registry:
+    get:
+      tags: [Registry]
+      operationId: listMyRegistryItems
+      summary: List monitored foods in my registry (paginated, user role)
+      description: |
+        **Role:** `user`. Returns a paginated list of `RegistryItem` records owned by the authenticated user.
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: One page of the caller's monitored food registry items
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistryItemPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags: [Registry]
+      operationId: createRegistryItem
+      summary: Add a new food item to my registry (user role)
+      description: |
+        **Role:** `user`. Creates a new `RegistryItem` owned by the authenticated user.
+        `POST` is not idempotent; calling it twice creates two separate registry entries.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistryItemCreate'
+      responses:
+        '201':
+          description: Created new registry item
+          headers:
+            Location:
+              description: URL of the newly created registry item
+              schema:
+                type: string
+                example: /api/v1/registry/15
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistryItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/registry/{itemId}:
+    parameters:
+      - $ref: '#/components/parameters/ItemId'
+    get:
+      tags: [Registry]
+      operationId: getRegistryItem
+      summary: Retrieve details for a single monitored food item (user role)
+      description: |
+        **Role:** `user`. Returns the `RegistryItem` if it belongs to the caller.
+      responses:
+        '200':
+          description: The requested registry item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistryItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    put:
+      tags: [Registry]
+      operationId: replaceRegistryItem
+      summary: Replace a monitored food's details in full (idempotent, user role)
+      description: |
+        **Role:** `user`. Replaces all mutable fields (`product` and `batch`) of an existing `RegistryItem` owned by the caller.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistryItemCreate'
+      responses:
+        '200':
+          description: The replaced registry item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistryItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      tags: [Registry]
+      operationId: deleteRegistryItem
+      summary: Remove a food item from monitoring (user role)
+      description: |
+        **Role:** `user`. Deletes the specified `RegistryItem` if owned by the caller.
+      responses:
+        '204':
+          description: Deleted successfully. No response body.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/recalls:
+    get:
+      tags: [Recalls]
+      operationId: listRecalls
+      summary: List active food recalls (sortable, filterable, paginated, user role)
+      description: |
+        **Role:** `user`. Lists FDA recalled foods sorted by `recallDate` and optionally filtered by product keyword.
+      parameters:
         - name: sort
           in: query
           description: Field and direction, Spring Pageable style.
           schema:
             type: string
-            enum: ['performedOn,desc', 'performedOn,asc']
-            default: 'performedOn,desc'
-      responses:
-        '500':
-          $ref: '#/components/responses/InternalError'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '200':
-          description: One page of the caller's workouts
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/WorkoutPage'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-    post:
-      tags: [Workouts]
-      operationId: createWorkout
-      summary: Log a workout
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/WorkoutCreate'
-      responses:
-        '500':
-          $ref: '#/components/responses/InternalError'
-        '201':
-          description: Created. POST is not idempotent; two calls make two workouts.
-          headers:
-            Location:
-              description: URL of the new workout
-              schema:
-                type: string
-                example: /api/v1/workouts/42
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Workout'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  /api/v1/workouts/{workoutId}:
-    parameters:
-      - $ref: '#/components/parameters/WorkoutId'
-    get:
-      tags: [Workouts]
-      operationId: getWorkout
-      summary: Get one of my workouts
-      responses:
-        '500':
-          $ref: '#/components/responses/InternalError'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '200':
-          description: The workout
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Workout'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    put:
-      tags: [Workouts]
-      operationId: replaceWorkout
-      summary: Replace a workout (idempotent)
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/WorkoutCreate'
-      responses:
-        '500':
-          $ref: '#/components/responses/InternalError'
-        '200':
-          description: The replaced workout
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Workout'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    patch:
-      tags: [Workouts]
-      operationId: updateWorkout
-      summary: Change some fields of a workout
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/WorkoutPatch'
-      responses:
-        '500':
-          $ref: '#/components/responses/InternalError'
-        '200':
-          description: The updated workout
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Workout'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    delete:
-      tags: [Workouts]
-      operationId: deleteWorkout
-      summary: Delete a workout
-      responses:
-        '500':
-          $ref: '#/components/responses/InternalError'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '204':
-          description: Deleted. No body.
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /api/v1/exercises:
-    get:
-      tags: [Exercises]
-      operationId: listExercises
-      summary: Browse the exercise catalog (public, filterable)
-      security: []          # public: no token needed
-      parameters:
-        - name: muscleGroup
+            enum: ['recallDate,desc', 'recallDate,asc']
+            default: 'recallDate,desc'
+        - name: product
           in: query
-          description: Only exercises for this muscle group
+          description: Optional keyword filter to search recalled food products
           schema:
-            $ref: '#/components/schemas/MuscleGroup'
+            type: string
+            example: Spinach
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/Size'
       responses:
-        '500':
-          $ref: '#/components/responses/InternalError'
         '200':
-          description: One page of exercises
+          description: A sorted page of recalled food alerts
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ExercisePage'
+                $ref: '#/components/schemas/RecalledFoodPage'
         '400':
           $ref: '#/components/responses/BadRequest'
-
-  /api/v1/users/me:
-    delete:
-      tags: [Users]
-      operationId: deleteMyAccount
-      summary: Delete my own account and ALL my data
-      description: Any signed-in user. Deletes the user row and everything they own (workouts, custom exercises).
-      responses:
-        '500':
-          $ref: '#/components/responses/InternalError'
-        '204':
-          description: Deleted. The token is now useless.
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/recalls/{recallId}:
+    parameters:
+      - $ref: '#/components/parameters/RecallId'
+    get:
+      tags: [Recalls]
+      operationId: getRecallById
+      summary: View details of a specific recall alert (user role)
+      description: |
+        **Role:** `user`. Retrieves full contamination, batch, and date details for a single `RecalledFood` entry.
+      responses:
+        '200':
+          description: Details of the specific recalled food alert
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecalledFood'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
 
   /api/v1/users:
     get:
       tags: [Admin]
       operationId: listUsers
-      summary: List all users (admin only)
+      summary: List all users in the system (admin only)
+      description: |
+        **Role:** `admin` (`isAdmin = true` in database). Regular users receive `403 Forbidden`.
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/Size'
       responses:
-        '500':
-          $ref: '#/components/responses/InternalError'
         '200':
           description: One page of users
           content:
@@ -248,25 +276,21 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-
-  /api/v1/users/{userId}:
-    parameters:
-      - name: userId
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-          example: 7
-    get:
-      tags: [Admin]
-      operationId: getUser
-      summary: View one user (admin only)
-      responses:
         '500':
           $ref: '#/components/responses/InternalError'
+  
+  /api/v1/users/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [Admin]
+      operationId: getUserById
+      summary: View a specific user (admin only)
+      description: |
+        **Role:** `admin`. Retrieves a single user's profile by ID. Regular users receive `403 Forbidden`.
+      responses:
         '200':
-          description: The user
+          description: The requested user
           content:
             application/json:
               schema:
@@ -279,10 +303,14 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
     patch:
       tags: [Admin]
-      operationId: updateUserRole
-      summary: Grant or revoke admin (admin only)
+      operationId: updateUserAdminStatus
+      summary: Partially update a user to grant or revoke admin role (admin only)
+      description: |
+        **Role:** `admin`. Updates the user's `isAdmin` boolean flag in the database. Regular users receive `403 Forbidden`.
       requestBody:
         required: true
         content:
@@ -290,10 +318,8 @@ paths:
             schema:
               $ref: '#/components/schemas/UserPatch'
       responses:
-        '500':
-          $ref: '#/components/responses/InternalError'
         '200':
-          description: The updated user
+          description: The updated user record
           content:
             application/json:
               schema:
@@ -306,16 +332,17 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
     delete:
       tags: [Admin]
       operationId: deleteUser
-      summary: Delete a user and all their data (admin only)
-      description: Requires the ADMIN role. A USER token gets 403.
+      summary: Completely delete a user and all their associated data (admin only)
+      description: |
+        **Role:** `admin`. Deletes the user row and cascades deletion to all `RegistryItem` records they own.
       responses:
-        '500':
-          $ref: '#/components/responses/InternalError'
         '204':
-          description: Deleted
+          description: User and all associated registry items deleted
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -324,6 +351,8 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
 
 components:
   securitySchemes:
@@ -334,14 +363,33 @@ components:
       description: JWT from the OAuth2 Authorization Code + PKCE flow (with Google, send the ID token; Google's access_token is opaque).
 
   parameters:
-    WorkoutId:
-      name: workoutId
+    ItemId:
+      name: itemId
       in: path
       required: true
+      description: Primary key ID of the RegistryItem
       schema:
         type: integer
         format: int64
-        example: 42
+        example: 15
+    RecallId:
+      name: recallId
+      in: path
+      required: true
+      description: Primary key ID of the RecalledFood alert
+      schema:
+        type: integer
+        format: int64
+        example: 102
+    UserId:
+      name: userId
+      in: path
+      required: true
+      description: Primary key ID of the User
+      schema:
+        type: integer
+        format: int64
+        example: 7
     Page:
       name: page
       in: query
@@ -361,111 +409,119 @@ components:
         default: 20
 
   schemas:
-    MuscleGroup:
-      type: string
-      enum: [CHEST, BACK, LEGS, SHOULDERS, ARMS, CORE, CARDIO]
-
-    Workout:
+    User:
       type: object
-      required: [id, performedOn, exercises]
+      required: [id, user, isAdmin]
       properties:
         id:
           type: integer
           format: int64
           readOnly: true
-          example: 42
-        performedOn:
+          example: 7
+        user:
           type: string
-          format: date
-          example: '2026-10-01'
-        durationMin:
-          type: integer
-          minimum: 1
-          nullable: true
-          example: 45
-        notes:
-          type: string
-          maxLength: 500
-          nullable: true
-          example: Felt strong today
-        exercises:
-          type: array
-          items:
-            $ref: '#/components/schemas/WorkoutExercise'
+          description: Unique username/email identifier from OAuth2 subject
+          example: atrujillo@csumb.edu
+        isAdmin:
+          type: boolean
+          description: True if the user has ADMIN privileges stored in the database
+          example: false
 
-    WorkoutCreate:
-      description: Body for POST and PUT. PUT replaces every field.
-      type: object
-      required: [performedOn, exercises]
-      properties:
-        performedOn:
-          type: string
-          format: date
-          example: '2026-10-01'
-        durationMin:
-          type: integer
-          minimum: 1
-          nullable: true
-          example: 45
-        notes:
-          type: string
-          maxLength: 500
-          nullable: true
-        exercises:
-          type: array
-          minItems: 1
-          items:
-            $ref: '#/components/schemas/WorkoutExercise'
-
-    WorkoutPatch:
-      description: Body for PATCH. Send only the fields you want to change.
+    UserPatch:
+      description: Body for PATCH /api/v1/users/{userId} to toggle admin privileges or username.
       type: object
       minProperties: 1
       properties:
-        durationMin:
-          type: integer
-          minimum: 1
-          nullable: true
-        notes:
+        user:
           type: string
-          maxLength: 500
-          nullable: true
+          minLength: 3
+          maxLength: 100
+          example: atrujillo@csumb.edu
+        isAdmin:
+          type: boolean
+          example: true
+      
 
-    WorkoutExercise:
+    RegistryItem:
       type: object
-      required: [exerciseId, sets, reps]
-      properties:
-        exerciseId:
-          type: integer
-          format: int64
-          example: 7
-        sets:
-          type: integer
-          minimum: 1
-          example: 3
-        reps:
-          type: integer
-          minimum: 1
-          example: 10
-        weightKg:
-          type: number
-          format: double
-          nullable: true
-          example: 60.0
-
-    Exercise:
-      type: object
-      required: [id, name, muscleGroup]
+      required: [id, userId, product]
       properties:
         id:
           type: integer
           format: int64
+          readOnly: true
+          example: 15
+        userId:
+          type: integer
+          format: int64
+          readOnly: true
+          description: Foreign key referencing the owning User
           example: 7
-        name:
+        product:
           type: string
-          example: Back Squat
-        muscleGroup:
-          $ref: '#/components/schemas/MuscleGroup'
+          maxLength: 200
+          example: Organic Baby Spinach
+        batch:
+          type: string
+          maxLength: 100
+          nullable: true
+          example: LOT-2026-09A
+        recalledFoods:
+          type: array
+          readOnly: true
+          description: List of RecalledFood alerts triggered for this registry item
+          items:
+            $ref: '#/components/schemas/RecalledFood'
+
+    RegistryItemCreate:
+      description: Request body for POST and PUT on /api/v1/registry. PUT replaces every field.
+      type: object
+      required: [product]
+      properties:
+        product:
+          type: string
+          minLength: 1
+          maxLength: 200
+          example: Organic Baby Spinach
+        batch:
+          type: string
+          maxLength: 100
+          nullable: true
+          example: LOT-2026-09A
+
+    RecalledFood:
+      type: object
+      required: [id, product, contaminant, recallDate, manuDate]
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+          example: 102
+        registryItemId:
+          type: integer
+          format: int64
+          nullable: true
+          description: Optional foreign key linking to a triggered RegistryItem
+          example: 15
+        product:
+          type: string
+          example: Organic Baby Spinach
+        contaminant:
+          type: string
+          example: Salmonella
+        recallDate:
+          type: string
+          format: date
+          example: '2026-10-02'
+        manuDate:
+          type: string
+          format: date
+          example: '2026-09-18'
+        batch:
+          type: string
+          nullable: true
+          example: LOT-2026-09A
 
     PageMeta:
       description: >-
@@ -488,57 +544,27 @@ components:
           type: integer
           example: 3
 
-    WorkoutPage:
+    RegistryItemPage:
       type: object
       required: [content, page]
       properties:
         content:
           type: array
           items:
-            $ref: '#/components/schemas/Workout'
+            $ref: '#/components/schemas/RegistryItem'
         page:
           $ref: '#/components/schemas/PageMeta'
 
-    ExercisePage:
+    RecalledFoodPage:
       type: object
       required: [content, page]
       properties:
         content:
           type: array
           items:
-            $ref: '#/components/schemas/Exercise'
+            $ref: '#/components/schemas/RecalledFood'
         page:
           $ref: '#/components/schemas/PageMeta'
-
-    User:
-      type: object
-      required: [id, email, displayName, role]
-      properties:
-        id:
-          type: integer
-          format: int64
-          example: 7
-        email:
-          type: string
-          format: email
-          example: sam@csumb.edu
-        displayName:
-          type: string
-          example: Sam Otter
-        role:
-          $ref: '#/components/schemas/Role'
-
-    Role:
-      type: string
-      enum: [USER, ADMIN]
-
-    UserPatch:
-      description: Body for PATCH /api/v1/users/{userId}. Today the only editable field is the role.
-      type: object
-      required: [role]
-      properties:
-        role:
-          $ref: '#/components/schemas/Role'
 
     UserPage:
       type: object
@@ -550,6 +576,27 @@ components:
             $ref: '#/components/schemas/User'
         page:
           $ref: '#/components/schemas/PageMeta'
+
+    Problem:
+      description: RFC 9457 Problem Details. The single consistent error body returned by every endpoint.
+      type: object
+      required: [title, status]
+      properties:
+        type:
+          type: string
+          default: about:blank
+        title:
+          type: string
+          example: Not Found
+        status:
+          type: integer
+          example: 404
+        detail:
+          type: string
+          example: Registry item 15 not found
+        instance:
+          type: string
+          example: /api/v1/registry/15
 
     Problem:
       description: RFC 9457 Problem Details. The ONE error body every endpoint returns.
@@ -592,6 +639,7 @@ components:
           example:
             title: Unauthorized
             status: 401
+            detail: Full authentication is required to access this resource.
     Forbidden:
       description: Valid token, but not allowed (for example, not an admin)
       content:
@@ -601,6 +649,7 @@ components:
           example:
             title: Forbidden
             status: 403
+            detail: Access is denied. Requires admin privileges or resource ownership.
     NotFound:
       description: Doesn't exist, or belongs to someone else
       content:
@@ -620,3 +669,4 @@ components:
           example:
             title: Internal Server Error
             status: 500
+            detail: An unexpected error occurred on the server.
