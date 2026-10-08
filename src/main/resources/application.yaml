@@ -2,13 +2,3 @@ spring:
   application:
     name: brainworm-api
 
-  datasource:
-    url: jdbc:sqlite:./database.db?foreign_keys=on
-    driver-class-name: org.sqlite.JDBC
-    hikari:
-      maximum-pool-size: 1
-
-  sql:
-    init:
-      mode: always
-      schema-locations: classpath:schema.sql
