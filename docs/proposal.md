@@ -31,6 +31,7 @@ erDiagram
     }
     RECALLED_FOOD {
         bigint id PK
+        bigint registry_item_id FK
         string product
         string contaminant
         date recallDate
