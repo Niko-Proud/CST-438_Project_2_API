@@ -9,6 +9,10 @@ public class RecalledFood {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "registry_item_id")
+    private RegistryItem registryItem;
+
     private String product;
     private String contaminant;
     private LocalDate recallDate;

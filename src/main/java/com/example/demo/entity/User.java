@@ -14,6 +14,9 @@ public class User {
     @Column(nullable = false)
     private boolean isAdmin;
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<RegistryItem> registryItems;
+
     public Long getId() {
         return id;
     }
