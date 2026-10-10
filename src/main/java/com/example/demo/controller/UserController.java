@@ -20,4 +20,30 @@ public class UserController {
     public User getCurrentUser() {
         return repository.findById(1L).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
     }
+
+    @GetMapping
+    public Page<User> listUsers(Pageable pageable) {
+        return repository.findAll(pageable);
+    }
+
+    @GetMapping("/{userId}")
+    public User getUser(@PathVariable Long userId) {
+        return repository.findById(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+    }
+
+    @PatchMapping("/{userId}")
+    public User updateUserRole(@PathVariable Long userId, @RequestBody User updates) {
+        User user = repository.findById(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        user.setAdmin(updates.isAdmin());
+        return repository.save(user);
+    }
+
+    @DeleteMapping("/{userId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteUser(@PathVariable Long userId) {
+        if (!repository.existsById(userId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
+        }
+        repository.deleteById(userId);
+    }
 }
