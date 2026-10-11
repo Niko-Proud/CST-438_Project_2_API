@@ -23,29 +23,27 @@ public class RegistryController {
 
     @GetMapping("/{itemId}")
     public RegistryItem getRegistryItem(@PathVariable Long itemId) {
-        return repository.findById(itemId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Item not found"));
+        Long mockUserId = 1L;
+        return registryService.getItem(itemId, mockUserId);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public RegistryItem addItem(@RequestBody RegistryItem newItem) {
-        return repository.save(newItem);
+        Long mockUserId = 1L;
+        return registryService.createItem(mockUserId, newItem);
     }
 
     @PutMapping("/{itemId}")
     public RegistryItem replaceItem(@PathVariable Long itemId, @RequestBody RegistryItem replacement) {
-        RegistryItem existing = repository.findById(itemId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Item not found"));
-        existing.setProduct(replacement.getProduct());
-        existing.setBatch(replacement.getBatch());
-        return repository.save(existing);
+        Long mockUserId = 1L;
+        return registryService.replaceItem(itemId, mockUserId, replacement);
     }
 
     @DeleteMapping("/{itemId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteItem(@PathVariable Long itemId) {
-        if (!repository.existsById(itemId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Item not found");
-        }
-        repository.deleteById(itemId);
+        Long mockUserId = 1L;
+        registryService.deleteItem(itemId, mockUserId);
     }
 }

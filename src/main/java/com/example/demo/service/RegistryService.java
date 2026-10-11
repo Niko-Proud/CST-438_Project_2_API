@@ -44,4 +44,8 @@ public class RegistryService {
         RegistryItem existing = getItem(itemId, requesterId);
         registryItemRepository.delete(existing);
     }
+
+    public Page<RegistryItem> getMyRegistry(Long userId, Pageable pageable) {
+        return registryItemRepository.findByUserId(userId, pageable);
+    }
 }
