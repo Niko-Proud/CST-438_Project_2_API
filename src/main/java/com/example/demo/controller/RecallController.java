@@ -1,5 +1,5 @@
 package com.example.demo.controller;
-import com.example.demo.model.RecalledFood;
+import com.example.demo.entity.RecalledFood;
 import com.example.demo.repository.RecalledFoodRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
