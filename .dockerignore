@@ -1,3 +1,4 @@
+<!-- Just ripped from the demo, because it's clean and works -->
 # Keep the build context small and keep local junk out of the image.
 # Anything listed here is invisible to COPY in the Dockerfile.
 
