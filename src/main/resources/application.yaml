@@ -1,3 +1,10 @@
 spring:
   application:
     name: demo
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+        - health

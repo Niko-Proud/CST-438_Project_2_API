@@ -1,0 +1,60 @@
+# Local development environment
+#
+# Start the API and its local PostgreSQL database with:
+#   docker compose up --build
+#
+# Stop the containers with:
+#   docker compose down
+#
+# The named pgdata volume keeps local database data between restarts. To
+# completely reset the local database, use `docker compose down -v`.
+
+services:
+  api:
+    # Build the API image from the Dockerfile in this repository.
+    build: .
+    # This is a local tag used by Compose; it is not the production image.
+    image: brain-worm:compose
+    ports:
+      # HOST_PORT:CONTAINER_PORT. Open http://localhost:8080 locally.
+      - "8080:8080"
+    environment:
+      # Application settings supplied when the container starts.
+      APP_VERSION: compose
+      # These are development-only credentials and connection settings.
+      # Production should provide its hosted database values at runtime.
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/appdb
+      SPRING_DATASOURCE_USERNAME: app
+      SPRING_DATASOURCE_PASSWORD: app
+      # The API uses the service name `db` as its database hostname. Inside the
+      # Compose network, `localhost` would mean the API container itself.
+    depends_on:
+      db:
+      # Do not start the API until PostgreSQL passes its health check.
+        condition: service_healthy
+# Local PostgreSQL database for development only.
+# This is separate from the hosted database used after deployment.
+  db:
+    image: postgres:17-alpine
+    environment:
+      # These values create the initial local database and user.
+      POSTGRES_DB: appdb
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+    ports:
+      # Makes PostgreSQL available from the host at localhost:5432.
+      - "5432:5432"
+    volumes:
+      # Store database files in the named pgdata volume.
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # Compose uses this to determine when PostgreSQL is ready for connections.
+      test: ["CMD-SHELL", "pg_isready -U app -d appdb"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+          
+# Named volumes are managed by Docker rather than stored in the repository.
+volumes:
+  pgdata:
