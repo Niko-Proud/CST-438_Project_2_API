@@ -1,47 +1,47 @@
 package com.example.demo.controller;
 import com.example.demo.entity.RecalledFood;
-import com.example.demo.repository.RecalledFoodRepository;
+import com.example.demo.service.RecallService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/v1")
 public class RecallController {
-    private final RecalledFoodRepository repository;
+    private final RecallService recallService;
 
-    public RecallController(RecalledFoodRepository repository) {
-        this.repository = repository;
+    public RecallController(RecallService recallService) {
+        this.recallService = recallService;
     }
 
     @GetMapping("/recalls")
     public Page<RecalledFood> getRecalls(
-        @RequestParam(required = false) String product,
-        @RequestParam(required = false) String contaminant,
-        @RequestParam(required = false) String batch,
-        @RequestParam(required = false) LocalDate recallDate, Pageable pageable) {
+            @RequestParam(required = false) String product,
+            @RequestParam(required = false) String contaminant,
+            @RequestParam(required = false) String batch,
+            @RequestParam(required = false) LocalDate recallDate, Pageable pageable) {
 
-        if (product != null) {
-            return repository.findByProductContainingIgnoreCase(product, pageable);
-        } 
-        else if (contaminant != null) {
-            return repository.findByContaminantContainingIgnoreCase(contaminant, pageable);
-        } 
-        else if (batch != null) {
-            return repository.findByBatch(batch, pageable);
-        } 
-        else if (recallDate != null) {
-            return repository.findByRecallDate(recallDate, pageable);
-        }
-
-        return repository.findAll(pageable);
+        return recallService.getFilteredRecalls(product, contaminant, batch, recallDate, pageable);
     }
 
-    @GetMapping("/recalls/{recallId}")
+    @GetMapping("/{recallId}")
     public RecalledFood getRecallById(@PathVariable Long recallId) {
-        return repository.findById(recallId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Recall not found"));
+        return recallService.getRecall(recallId);
+    }
+
+    @PostMapping("/registry/{registryItemId}")
+    @ResponseStatus(HttpStatus.CREATED)
+    public RecalledFood addRecallToRegistry(@PathVariable Long registryItemId, @RequestBody RecalledFood recall) {
+        Long mockUserId = 1L;
+        return recallService.addRecallToRegistry(registryItemId, mockUserId, recall);
+    }
+
+    @DeleteMapping("/{recallId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteRecall(@PathVariable Long recallId) {
+        Long mockUserId = 1L;
+        recallService.deleteRecall(recallId, mockUserId);
     }
 }

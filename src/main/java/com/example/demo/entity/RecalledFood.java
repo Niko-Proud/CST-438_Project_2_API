@@ -66,4 +66,12 @@ public class RecalledFood {
     public void setBatch(String batch) {
         this.batch = batch;
     }
+
+    public RegistryItem getRegistryItem() {
+        return registryItem;
+    }
+
+    public void setRegistryItem(RegistryItem registryItem) {
+        this.registryItem = registryItem;
+    }
 }
