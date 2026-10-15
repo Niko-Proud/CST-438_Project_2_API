@@ -1,7 +1,9 @@
-package com.example.demo.service;
+package com.example.demo;
 import com.example.demo.entity.RegistryItem;
 import com.example.demo.entity.User;
 import com.example.demo.repository.RegistryItemRepository;
+import com.example.demo.repository.UserRepository;
+import com.example.demo.service.RegistryService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -16,6 +18,8 @@ import static org.mockito.Mockito.*;
 public class RegistryServiceTest {
     @Mock
     private RegistryItemRepository registryItemRepository;
+    @Mock
+    private UserRepository userRepository;
 
     @InjectMocks
     private RegistryService registryService;
@@ -32,7 +36,7 @@ public class RegistryServiceTest {
 
         when(registryItemRepository.findById(10L)).thenReturn(Optional.of(item));
         ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {
-            registryService.deleteRegistryItem(10L, maliciousRequesterId);
+            registryService.deleteItem(10L, maliciousRequesterId);
         });
         
         assertEquals(403, exception.getStatusCode().value());
@@ -49,7 +53,7 @@ public class RegistryServiceTest {
         blankItem.setUser(user);
 
         ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {
-            registryService.addRegistryItem(blankItem);
+            registryService.createItem(1L, blankItem);
         });
 
         assertEquals(400, exception.getStatusCode().value());
@@ -67,7 +71,7 @@ public class RegistryServiceTest {
         item.setUser(owner);
 
         when(registryItemRepository.findById(15L)).thenReturn(Optional.of(item));
-        RegistryItem result = registryService.getRegistryItem(15L, 1L);
+        RegistryItem result = registryService.getItem(15L, 1L);
 
         assertNotNull(result);
         assertEquals("Organic Spinach", result.getProduct());

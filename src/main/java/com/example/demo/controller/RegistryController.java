@@ -1,6 +1,7 @@
 package com.example.demo.controller;
 import com.example.demo.entity.RegistryItem;
-import com.example.demo.repository.RegistryItemRepository;
+import com.example.demo.service.RegistryService;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -10,15 +11,15 @@ import org.springframework.web.server.ResponseStatusException;
 @RestController
 @RequestMapping("/api/v1/registry")
 public class RegistryController {
-    private final RegistryItemRepository repository;
-    public RegistryController(RegistryItemRepository repository) {
-        this.repository = repository;
+    private final RegistryService registryService;
+    public RegistryController(RegistryService registryService) {
+        this.registryService = registryService;
     }
 
     @GetMapping
     public Page<RegistryItem> getMyRegistry(Pageable pageable) {
         Long mockUserId = 1L; 
-        return repository.findByUserId(mockUserId, pageable);
+        return registryService.getMyRegistry(mockUserId, pageable);
     }
 
     @GetMapping("/{itemId}")
