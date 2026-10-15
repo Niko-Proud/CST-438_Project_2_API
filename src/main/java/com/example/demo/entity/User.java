@@ -12,8 +12,8 @@ public class User {
     @Column(unique = true, nullable = false)
     private String username; 
 
-    @Column(nullable = false)
-    private boolean isAdmin;
+    @Column(name = "is_admin", nullable = false)
+    private boolean admin;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RegistryItem> registryItems;
@@ -35,10 +35,10 @@ public class User {
     }
 
     public boolean isAdmin() {
-        return isAdmin;
+        return admin;
     }
 
     public void setAdmin(boolean admin) {
-        isAdmin = admin;
+        this.admin = admin;
     }
 }

@@ -67,3 +67,60 @@ To see the contract rendered, paste `docs/openapi.yaml` into https://editor.swag
 - Prism: https://docs.stoplight.io/docs/prism
 - Mermaid ER diagrams: https://mermaid.js.org/syntax/entityRelationshipDiagram.html
 - RFC 9457 Problem Details: https://www.rfc-editor.org/rfc/rfc9457
+
+## Local CI and Docker testing
+
+Run these checks from the repository root before pushing workflow changes.
+
+### Gradle tests on Windows
+
+```powershell
+.\gradlew.bat test --no-daemon
+```
+
+Run PMD separately:
+
+```powershell
+.\gradlew.bat pmdMain --no-daemon
+```
+
+### Build the Docker image without publishing it
+
+```powershell
+docker build --no-cache -t brain-worm:local .
+```
+
+This creates a local image only. It does not push anything to GHCR.
+
+### Start the local API and PostgreSQL database
+
+```powershell
+docker compose up --build
+```
+
+Stop the stack:
+
+```powershell
+docker compose down
+```
+
+Reset the disposable local database completely:
+
+```powershell
+docker compose down -v
+```
+
+### Run the GitHub Actions checks locally
+
+After installing `act`, run the checks job with:
+
+```powershell
+act pull_request -W .github/workflows/ciactions.yaml -j checks
+```
+
+This simulates the pull-request checks locally and should run tests and PMD
+without publishing an image. Local `act` results are useful but are not
+identical to GitHub-hosted runners.
+
+Testcontainers also requires Docker to be running. A Dockerfile build and a
+Compose run do not replace a Testcontainers integration test.
