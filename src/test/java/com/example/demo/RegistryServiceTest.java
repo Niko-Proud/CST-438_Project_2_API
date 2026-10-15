@@ -1,6 +1,6 @@
 package com.example.demo.service;
-import com.example.demo.model.RegistryItem;
-import com.example.demo.model.User;
+import com.example.demo.entity.RegistryItem;
+import com.example.demo.entity.User;
 import com.example.demo.repository.RegistryItemRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

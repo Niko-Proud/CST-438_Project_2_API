@@ -1,5 +1,5 @@
 package com.example.demo.controller;
-import com.example.demo.model.User;
+import com.example.demo.entity.User;
 import com.example.demo.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -11,6 +11,7 @@ import org.springframework.web.server.ResponseStatusException;
 @RestController
 @RequestMapping("/api/v1/users")
 public class UserController {
+    private static final String USER_NOT_FOUND = "User not found";
     private final UserRepository repository;
     public UserController(UserRepository repository) {
         this.repository = repository;
@@ -18,7 +19,7 @@ public class UserController {
 
     @GetMapping("/me")
     public User getCurrentUser() {
-        return repository.findById(1L).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        return repository.findById(1L).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, USER_NOT_FOUND));
     }
 
     @GetMapping
@@ -28,12 +29,12 @@ public class UserController {
 
     @GetMapping("/{userId}")
     public User getUser(@PathVariable Long userId) {
-        return repository.findById(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        return repository.findById(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, USER_NOT_FOUND));
     }
 
     @PatchMapping("/{userId}")
     public User updateUserRole(@PathVariable Long userId, @RequestBody User updates) {
-        User user = repository.findById(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        User user = repository.findById(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, USER_NOT_FOUND));
         user.setAdmin(updates.isAdmin());
         return repository.save(user);
     }
@@ -42,7 +43,7 @@ public class UserController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteUser(@PathVariable Long userId) {
         if (!repository.existsById(userId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, USER_NOT_FOUND);
         }
         repository.deleteById(userId);
     }

@@ -1,5 +1,5 @@
 package com.example.demo.controller;
-import com.example.demo.model.RegistryItem;
+import com.example.demo.entity.RegistryItem;
 import com.example.demo.repository.RegistryItemRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
