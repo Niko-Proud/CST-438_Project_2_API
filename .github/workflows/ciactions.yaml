@@ -42,6 +42,9 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: gradle
+      # Makes it so that the tests can actually run with permissions, windows be weird man :/
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
 
       # Runs the project's JUnit tests.
       - name: Run tests
