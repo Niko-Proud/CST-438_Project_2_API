@@ -22,7 +22,6 @@ public class RecallController {
             @RequestParam(required = false) String contaminant,
             @RequestParam(required = false) String batch,
             @RequestParam(required = false) LocalDate recallDate, Pageable pageable) {
-
         return recallService.getFilteredRecalls(product, contaminant, batch, recallDate, pageable);
     }
 
