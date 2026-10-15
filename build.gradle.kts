@@ -59,12 +59,18 @@ dependencies {
 	// https://docs.spring.io/spring-boot/reference/testing/testcontainers.html
 	testImplementation("org.springframework.boot:spring-boot-testcontainers")
 
+	// Imports one consistent Testcontainers version for all test modules below.
+	// Official Gradle documentation:
+	// https://github.com/testcontainers/testcontainers-java/blob/main/docs/index.md
+	testImplementation(platform("org.testcontainers:testcontainers-bom:2.0.5"))
+
 	// Provides JUnit 5 lifecycle support and the PostgreSQL container module.
 	// These containers are temporary test infrastructure, not the development
 	// database created by docker-compose.yml.
-	// Official documentation: https://java.testcontainers.org/modules/databases/
-	testImplementation("org.testcontainers:junit-jupiter")
-	testImplementation("org.testcontainers:postgresql")
+	// Official PostgreSQL module documentation:
+	// https://java.testcontainers.org/modules/databases/postgres/
+	testImplementation("org.testcontainers:testcontainers-junit-jupiter")
+	testImplementation("org.testcontainers:testcontainers-postgresql")
 
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
