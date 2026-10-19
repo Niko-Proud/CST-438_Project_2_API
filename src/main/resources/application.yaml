@@ -2,6 +2,33 @@ spring:
   application:
     name: demo
 
+  # Flyway owns schema creation and upgrade history. This runs against the
+  # Compose database locally, a Testcontainers database during integration
+  # tests, and the configured remote database in deployment.
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Google issues the ID tokens used by the frontend. These endpoints
+          # can be overridden by deployment environment variables without
+          # putting credentials in this repository or the Docker image.
+          issuer-uri: ${GOOGLE_ISSUER_URI:https://accounts.google.com}
+          jwk-set-uri: ${GOOGLE_JWK_SET_URI:https://www.googleapis.com/oauth2/v3/certs}
+
+# Must match the frontend's GOOGLE_CLIENT_ID in deployment. It is read by the
+# backend security configuration to validate the JWT audience; the value is
+# intentionally supplied at runtime rather than committed here.
+# GOOGLE_CLIENT_ID=<same Google OAuth client ID used by the Android app>
+
+# Use Render's assigned PORT in deployment while keeping local development on
+# 8080. The value is supplied at runtime and is never baked into the image.
+server:
+  port: ${PORT:8080}
+
 management:
   endpoints:
     web:
