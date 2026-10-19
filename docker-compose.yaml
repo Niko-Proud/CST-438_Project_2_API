@@ -26,6 +26,9 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/appdb
       SPRING_DATASOURCE_USERNAME: app
       SPRING_DATASOURCE_PASSWORD: app
+      # Hibernate checks that entity mappings match the Flyway-created schema
+      # but does not change it. Flyway remains the only schema owner.
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
       # These values come from the root .env file for local development.
       # Render receives the production values from its own environment settings.
       PORT: ${PORT:-8080}
