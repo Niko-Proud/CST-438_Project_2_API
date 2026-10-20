@@ -25,7 +25,7 @@ public class RecallController {
         return recallService.getFilteredRecalls(product, contaminant, batch, recallDate, pageable);
     }
 
-    @GetMapping("/{recallId}")
+    @GetMapping("/recalls/{recallId}")
     public RecalledFood getRecallById(@PathVariable Long recallId) {
         return recallService.getRecall(recallId);
     }
@@ -37,7 +37,7 @@ public class RecallController {
         return recallService.addRecallToRegistry(registryItemId, mockUserId, recall);
     }
 
-    @DeleteMapping("/{recallId}")
+    @DeleteMapping("/recalls/{recallId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteRecall(@PathVariable Long recallId) {
         Long mockUserId = 1L;
