@@ -13,10 +13,10 @@ public class RegistryItem {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 200)
     private String product;
 
-    @Column(nullable = true)
+    @Column(nullable = true, length = 100)
     private String batch;
 
     @OneToMany(mappedBy = "registryItem", cascade = CascadeType.ALL, orphanRemoval = true)

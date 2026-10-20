@@ -28,6 +28,8 @@ repositories {
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
 	implementation("org.springframework.boot:spring-boot-starter-webmvc")
+	// Codex was used to help generate the dependency additions for persistence, OAuth2, Flyway, and Testcontainers.
+	// The assistance focused on matching the build dependencies to the application's runtime and integration-test requirements.
 
 	// Validates Google OAuth2 bearer JWTs before protected controllers run.
 	// The frontend obtains the token; this backend acts as the OAuth2 resource

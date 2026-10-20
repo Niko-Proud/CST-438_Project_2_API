@@ -13,10 +13,19 @@ public class RecalledFood {
     @JoinColumn(name = "registry_item_id")
     private RegistryItem registryItem;
 
+    @Column(nullable = false, length = 200)
     private String product;
+
+    @Column(nullable = false, length = 255)
     private String contaminant;
+
+    @Column(name = "recall_date", nullable = false)
     private LocalDate recallDate;
+
+    @Column(name = "manu_date", nullable = false)
     private LocalDate manuDate;
+
+    @Column(length = 100)
     private String batch;
     
     public Long getId() {
