@@ -26,6 +26,7 @@ repositories {
 }
 
 dependencies {
+	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
 	implementation("org.springframework.boot:spring-boot-starter-webmvc")
 	// Codex was used to help generate the dependency additions for persistence, OAuth2, Flyway, and Testcontainers.
@@ -89,6 +90,7 @@ dependencies {
 	testImplementation("org.testcontainers:testcontainers-postgresql")
 
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+	runtimeOnly("org.postgresql:postgresql")
 }
 
 tasks.withType<Test> {

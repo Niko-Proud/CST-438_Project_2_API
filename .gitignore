@@ -39,3 +39,6 @@ out/
 # Local environment files may contain database credentials or other secrets.
 .env
 *.env
+
+# Android Studio's local SDK path is machine-specific.
+local.properties

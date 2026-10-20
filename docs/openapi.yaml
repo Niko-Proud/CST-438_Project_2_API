@@ -578,27 +578,6 @@ components:
           $ref: '#/components/schemas/PageMeta'
 
     Problem:
-      description: RFC 9457 Problem Details. The single consistent error body returned by every endpoint.
-      type: object
-      required: [title, status]
-      properties:
-        type:
-          type: string
-          default: about:blank
-        title:
-          type: string
-          example: Not Found
-        status:
-          type: integer
-          example: 404
-        detail:
-          type: string
-          example: Registry item 15 not found
-        instance:
-          type: string
-          example: /api/v1/registry/15
-
-    Problem:
       description: RFC 9457 Problem Details. The ONE error body every endpoint returns.
       type: object
       required: [title, status]
