@@ -12,6 +12,11 @@ public class User {
     @Column(unique = true, nullable = false)
     private String username; 
 
+    // Google's stable OpenID Connect subject identifies the account without
+    // storing the short-lived bearer or ID token in the database.
+    @Column(name = "google_sub", length = 128, unique = true)
+    private String googleSub;
+
     @Column(nullable = false)
     private boolean isAdmin;
 
@@ -32,6 +37,14 @@ public class User {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public String getGoogleSub() {
+        return googleSub;
+    }
+
+    public void setGoogleSub(String googleSub) {
+        this.googleSub = googleSub;
     }
 
     public boolean isAdmin() {
