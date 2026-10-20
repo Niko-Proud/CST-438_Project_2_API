@@ -36,6 +36,6 @@ out/
 ### VS Code ###
 .vscode/
 
-# Local environment files may contain credentials or machine-specific values.
+# Local environment files may contain database credentials or other secrets.
 .env
 *.env

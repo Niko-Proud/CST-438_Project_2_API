@@ -5,6 +5,22 @@ spring:
   # Flyway owns schema creation and upgrade history. This runs against the
   # Compose database locally, a Testcontainers database during integration
   # tests, and the configured remote database in deployment.
+  # Render and Docker provide these values when the application starts.
+  # Keeping them as environment variables prevents database credentials from
+  # being committed to the repository or baked into the image.
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+
+  # Hibernate checks that the Java entities match the schema, while Flyway
+  # remains responsible for creating and upgrading the database structure.
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+  # Flyway applies versioned SQL migrations at startup. The migration files
+  # live under src/main/resources/db/migration and are packaged in the image.
   flyway:
     enabled: true
     locations: classpath:db/migration
@@ -26,6 +42,7 @@ spring:
 
 # Use Render's assigned PORT in deployment while keeping local development on
 # 8080. The value is supplied at runtime and is never baked into the image.
+# Render supplies PORT at runtime. The local default keeps development on 8080.
 server:
   port: ${PORT:8080}
 
