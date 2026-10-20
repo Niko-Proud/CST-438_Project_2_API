@@ -1,0 +1,70 @@
+# Most of this is jsut grabbed directly from the documentation at: https://docs.docker.com/guides/gha/
+# Tells you what the workflow does
+# This workflow builds the Docker image for pull requests and publishes it to
+# GitHub Container Registry after a change reaches main.
+name: Build and Push Docker Image
+# Sets event flags to trigger the build and push of the docker image
+on:
+# On a push to main, triggers a build of teh docker image
+  push:
+    branches:
+      - main
+      # On any PR, trigger again
+  pull_request:
+# This is explained here:https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions
+# they're custom environment variables that are used for creating the containers registry domain and the name for the Docker image
+env:
+  # ghcr.io is GitHub's Container Registry. github.repository expands to owner/name.
+  # These values are reused by the login, metadata, and build steps below.
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+# generates the metadata and tags for our image automatically, from the repo
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # The runner receives a fresh Linux environment for this job.
+    # Gives the actiosn file the permissions afforded to the supplied github_token account
+    permissions:
+      # Read the repository and allow the main-branch run to upload to GHCR.
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+
+    steps:
+    # Checks out teh repo and clones it
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      # Creates the Docker builder used by the build-and-push action.
+      # Buildx provides current Docker build features and caching support.
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      # Does what it's name says
+      - name: Log in to the Container registry
+        # Pull requests build the image but deliberately do not authenticate or publish.
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      # Generates repository-based image tags and labels for the build step.
+      - name: Extract Docker image metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      
+      # Builds the Dockerfile using the repository as context.
+      # Pull requests build only; a push to main also publishes the image.
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
