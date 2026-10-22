@@ -6,9 +6,9 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface RegistryItemRepository extends JpaRepository<RegistryItem, Long> {
-    Page<RegistryItem> findByUserId(Long userId, Pageable pageable);
+    Page<RegistryItem> findByUser_Id(Long userId, Pageable pageable);
 
     // Spring Data binds these values as query parameters; no SQL is assembled
     // from request strings, preventing injection through ownership lookups.
-    Optional<RegistryItem> findByIdAndUserUsername(Long id, String username);
+    Optional<RegistryItem> findByIdAndUser_Id(Long id, Long userId);
 }

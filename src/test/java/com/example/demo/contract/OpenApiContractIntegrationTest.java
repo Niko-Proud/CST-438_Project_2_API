@@ -43,6 +43,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Documentation:
  * https://docs.spring.io/spring-security/reference/servlet/test/mockmvc/jwt.html
  * https://docs.spring.io/spring-boot/reference/testing/testcontainers.html
+ * Codex assisted with the first-login and self-delete contract tests added
+ * alongside the corresponding API behavior.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -104,6 +106,28 @@ class OpenApiContractIntegrationTest {
         assertUnauthorized(get("/api/v1/users/me"));
         mockMvc.perform(get("/api/v1/users/me").with(userJwt(USER_SUBJECT)))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void currentUser_createsGoogleUserOnFirstLogin() throws Exception {
+        String newSubject = "new-google-subject";
+
+        mockMvc.perform(get("/api/v1/users/me").with(userJwt(newSubject)))
+                .andExpect(status().isOk());
+
+        User created = userRepository.findByGoogleSub(newSubject).orElseThrow();
+        assertEquals(newSubject, created.getUsername());
+        assertEquals(newSubject, created.getGoogleSub());
+    }
+
+    @Test
+    void currentUserDelete_requiresAuthentication_andDeletesAccount() throws Exception {
+        assertUnauthorized(delete("/api/v1/users/me"));
+
+        mockMvc.perform(delete("/api/v1/users/me").with(userJwt(USER_SUBJECT)))
+                .andExpect(status().isNoContent());
+
+        assertEquals(false, userRepository.findById(user.getId()).isPresent());
     }
 
     @Test

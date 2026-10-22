@@ -17,21 +17,33 @@ import org.springframework.security.core.Authentication;
  * Authentication is enforced by SecurityConfig before these methods run.
  * Administrator status is read from the database rather than accepted from
  * the request body, so a regular user cannot promote themselves.
+ * The /me endpoint also provisions a first-login Google user and supports
+ * deleting that authenticated user's account.
+ * Codex assisted with the route implementation and the explanatory comments.
  *
  * API contract: docs/openapi.yaml
  */
 public class UserController {
     private static final String USER_NOT_FOUND = "User not found";
     private final UserRepository repository;
-    public UserController(UserRepository repository) {
+    private final UserService userService;
+
+    public UserController(UserRepository repository, UserService userService) {
         this.repository = repository;
+        this.userService = userService;
     }
 
     @GetMapping("/me")
     /** Uses the verified JWT subject to retrieve the caller's database record. */
     public User getCurrentUser(Authentication authentication) {
-        return repository.findByUsername(authentication.getName())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, USER_NOT_FOUND));
+        return userService.getOrCreateFromAuthentication(authentication);
+    }
+
+    /** Deletes the authenticated account and its cascade-owned registry records. */
+    @DeleteMapping("/me")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteCurrentUser(Authentication authentication) {
+        userService.deleteCurrentUser(authentication);
     }
 
     @GetMapping
@@ -66,7 +78,8 @@ public class UserController {
     }
 
     private void requireAdmin(Authentication authentication) {
-        boolean admin = repository.findByUsername(authentication.getName())
+        boolean admin = repository.findByGoogleSub(authentication.getName())
+                .or(() -> repository.findByUsername(authentication.getName()))
                 .map(User::isAdmin)
                 .orElse(false);
         if (!admin) {
