@@ -15,10 +15,10 @@ java {
 }
 
 pmd {
-    isConsoleOutput = true
-    toolVersion = "7.16.0"
-    rulesMinimumPriority = 5
-    ruleSets = listOf("category/java/errorprone.xml", "category/java/bestpractices.xml")
+	isConsoleOutput = true
+	toolVersion = "7.16.0"
+	rulesMinimumPriority = 5
+	ruleSets = listOf("category/java/errorprone.xml", "category/java/bestpractices.xml")
 }
 
 repositories {
@@ -28,22 +28,34 @@ repositories {
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
-	implementation("org.springframework.boot:spring-boot-starter-webmvc")
-	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
-	testImplementation("io.rest-assured:rest-assured:5.4.0")
+	// Note: spring-boot-starter-webmvc was removed as it is already included transitively by spring-boot-starter-web.
+
+	// Validates Google OAuth2 bearer JWTs before protected controllers run.
+	implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
+
+	// Supplies Spring Data JPA, Hibernate, and Spring's database integration.
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-	// Spring Boot runs the versioned SQL files in src/main/resources/db/migration
-	// when the application starts. PostgreSQL support is supplied separately.
-	// References: https://docs.spring.io/spring-boot/reference/using/build-systems.html
-	//            https://documentation.red-gate.com/fd/postgresql-database-277579325.html
+
+	// Enables Spring Boot's Flyway auto-configuration.
 	implementation("org.springframework.boot:spring-boot-starter-flyway")
 	runtimeOnly("org.flywaydb:flyway-database-postgresql")
+
+	// Provides the PostgreSQL JDBC driver at runtime.
 	runtimeOnly("org.postgresql:postgresql")
-	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+	// Tests
+	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
+	testImplementation("io.rest-assured:rest-assured:5.4.0")
+	testImplementation("org.springframework.security:spring-security-test")
+
+	// Testcontainers
 	testImplementation("org.springframework.boot:spring-boot-testcontainers")
-	testImplementation("org.testcontainers:junit-jupiter")
-	testImplementation("org.testcontainers:postgresql")
-	runtimeOnly("org.postgresql:postgresql")
+	testImplementation(platform("org.testcontainers:testcontainers-bom:2.0.5"))
+	// The BOM supplies the versions for Testcontainers' JUnit and PostgreSQL modules.
+	testImplementation("org.testcontainers:testcontainers-junit-jupiter")
+	testImplementation("org.testcontainers:testcontainers-postgresql")
+
+	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 tasks.withType<Test> {

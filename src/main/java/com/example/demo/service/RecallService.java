@@ -41,7 +41,9 @@ public class RecallService {
 
     public void deleteRecall(Long recallId, Long requesterId) {
         RecalledFood existingRecall = getRecall(recallId);
-        if (!existingRecall.getRegistryItem().getUser().getId().equals(requesterId)) {
+        RegistryItem registryItem = existingRecall.getRegistryItem();
+        if (registryItem == null || registryItem.getUser() == null
+                || !registryItem.getUser().getId().equals(requesterId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You do not have permission to delete this recall");
         }
         recalledFoodRepository.delete(existingRecall);

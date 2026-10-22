@@ -1,4 +1,5 @@
 # Most of this is jsut grabbed directly from the documentation at: https://docs.docker.com/guides/gha/
+# Had Codex help with some parts that were a bit confusing or correctign syntax/logical errors, and with some of the comments
 # Tells you what the workflow does
 # This workflow builds the Docker image for pull requests and publishes it to
 # GitHub Container Registry after a change reaches main.
@@ -21,7 +22,41 @@ env:
 
 # generates the metadata and tags for our image automatically, from the repo
 jobs:
+  # Runs the project's automated checks before Docker is built.
+  # If either command fails, the Docker job below is skipped.
+  checks:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      # Provides the source code and Gradle wrapper to the runner.
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      # Installs the same Java version used by the Gradle toolchain and caches
+      # downloaded Gradle dependencies between workflow runs.
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      # Makes it so that the tests can actually run with permissions, windows be weird man :/
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+
+      # Runs the project's JUnit tests.
+      - name: Run tests
+        run: ./gradlew test --no-daemon
+
+      # Runs the PMD rules configured in build.gradle.kts.
+      - name: Run PMD
+        run: ./gradlew pmdMain --no-daemon
+
   build:
+    # Do not build or publish an image until tests and PMD succeed.
+    needs: checks
     runs-on: ubuntu-latest
     # The runner receives a fresh Linux environment for this job.
     # Gives the actiosn file the permissions afforded to the supplied github_token account

@@ -63,8 +63,24 @@ ALTER TABLE recalled_foods
     ALTER COLUMN registry_item_id TYPE BIGINT USING registry_item_id::BIGINT;
 
 -- Convert the legacy 0/1 admin flag to the boolean used by the User entity.
-ALTER TABLE users
-    ALTER COLUMN is_admin TYPE BOOLEAN USING (is_admin <> 0);
+-- V1 already creates this column as BOOLEAN for a fresh Testcontainers
+-- database, so skip the conversion when the target type is already correct.
+DO $$
+DECLARE
+    admin_type TEXT;
+BEGIN
+    SELECT data_type
+    INTO admin_type
+    FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'users'
+      AND column_name = 'is_admin';
+
+    IF admin_type IS NOT NULL AND admin_type <> 'boolean' THEN
+        ALTER TABLE users
+            ALTER COLUMN is_admin TYPE BOOLEAN USING (is_admin <> 0);
+    END IF;
+END $$;
 
 ALTER TABLE users
     ALTER COLUMN is_admin SET DEFAULT FALSE;

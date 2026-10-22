@@ -14,6 +14,9 @@ RUN ./gradlew bootJar --no-daemon --quiet
 # Stage 2, where we run the files after building them
 FROM eclipse-temurin:21-jre-alpine AS runtime
 WORKDIR /CST-438_Project_2_API
+# The health check uses wget, which is not guaranteed to be included in the
+# minimal Alpine-based JRE image.
+RUN apk add --no-cache wget
 # Creates a low priveledge user and group to run, just in case someone tries to inject malicious code 
 # through the app
 RUN addgroup -S spring && adduser -S spring -G spring

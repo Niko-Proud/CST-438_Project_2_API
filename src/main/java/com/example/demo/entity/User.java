@@ -1,7 +1,6 @@
 package com.example.demo.entity;
 import java.util.List;
 import jakarta.persistence.*;
-import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -14,12 +13,12 @@ public class User {
     private String username; 
 
     // Google's stable OpenID Connect subject identifies the account without
-    // storing the short-lived bearer or ID token in the database.
+    // storing a short-lived bearer or ID token in the database.
     @Column(name = "google_sub", length = 128, unique = true)
     private String googleSub;
 
-    @Column(nullable = false)
-    private boolean isAdmin;
+    @Column(name = "is_admin", nullable = false)
+    private boolean admin;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RegistryItem> registryItems;
@@ -49,10 +48,10 @@ public class User {
     }
 
     public boolean isAdmin() {
-        return isAdmin;
+        return admin;
     }
 
     public void setAdmin(boolean admin) {
-        isAdmin = admin;
+        this.admin = admin;
     }
 }

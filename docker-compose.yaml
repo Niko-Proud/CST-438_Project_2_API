@@ -26,7 +26,15 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/appdb
       SPRING_DATASOURCE_USERNAME: app
       SPRING_DATASOURCE_PASSWORD: app
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      # Hibernate checks that entity mappings match the Flyway-created schema
+      # but does not change it. Flyway remains the only schema owner.
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      # These values come from the root .env file for local development.
+      # Render receives the production values from its own environment settings.
+      PORT: ${PORT:-8080}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_ISSUER_URI: ${GOOGLE_ISSUER_URI:-https://accounts.google.com}
+      GOOGLE_JWK_SET_URI: ${GOOGLE_JWK_SET_URI:-https://www.googleapis.com/oauth2/v3/certs}
       # The API uses the service name `db` as its database hostname. Inside the
       # Compose network, `localhost` would mean the API container itself.
     depends_on:

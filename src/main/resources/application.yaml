@@ -2,6 +2,12 @@ spring:
   application:
     name: demo
 
+  # Codex was used to help generate this environment-aware Spring configuration.
+  # The assistance focused on runtime database settings, Flyway ownership, and Render's assigned port.
+
+  # Flyway owns schema creation and upgrade history. This runs against the
+  # Compose database locally, a Testcontainers database during integration
+  # tests, and the configured remote database in deployment.
   # Render and Docker provide these values when the application starts.
   # Keeping them as environment variables prevents database credentials from
   # being committed to the repository or baked into the image.
@@ -26,6 +32,23 @@ spring:
     # then applies later migrations such as V2__add_google_subject.sql.
     baseline-on-migrate: true
 
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Google issues the ID tokens used by the frontend. These endpoints
+          # can be overridden by deployment environment variables without
+          # putting credentials in this repository or the Docker image.
+          issuer-uri: ${GOOGLE_ISSUER_URI:https://accounts.google.com}
+          jwk-set-uri: ${GOOGLE_JWK_SET_URI:https://www.googleapis.com/oauth2/v3/certs}
+
+# Must match the frontend's GOOGLE_CLIENT_ID in deployment. It is read by the
+# backend security configuration to validate the JWT audience; the value is
+# intentionally supplied at runtime rather than committed here.
+# GOOGLE_CLIENT_ID=<same Google OAuth client ID used by the Android app>
+
+# Use Render's assigned PORT in deployment while keeping local development on
+# 8080. The value is supplied at runtime and is never baked into the image.
 # Render supplies PORT at runtime. The local default keeps development on 8080.
 server:
   port: ${PORT:8080}
