@@ -1,72 +1,70 @@
-# CST 438 Project 02: API Template
+# Brainworm API
 
-Starter repo for Project 02. **One person per team** clicks **Use this template → Create a new
-repository**, names it after your API, and adds teammates as collaborators.
+Brainworm is a small app for keeping track of the food you buy. You add your foods, and the app lets you know if any of them have been recalled by the FDA.
 
-> Replace this README with your own in Sprint 4. The prompt lists what it must contain.
+This repo is the API (Spring Boot). The Android app is in our app repo:
+https://github.com/Niko-Proud/CST-438_Project_2_App
 
-## What's in here
+## Team
 
-| Path | What it is | When |
-|---|---|---|
-| `docs/proposal.md` | Proposal template: pitch, resources, ER sketch, endpoints, choices, risks | **Thu 10/1** |
-| `docs/openapi.yaml` | A complete example contract (workout tracker). Replace it with your API. | Sprint 1 |
-| `redocly.yaml` | Lint rules for the contract | Sprint 1 |
-| `.github/ISSUE_TEMPLATE/user_story.md` | Every new issue starts as a user story with acceptance criteria | now |
-| `.github/pull_request_template.md` | Every PR starts with `Closes #` and a test checklist | now |
-| `.gitignore` | Gradle, Android, IntelliJ, Node, and **secrets** (`.env`, keystores, `local.properties`) | now |
-
-Where your code goes is up to you: an `api/` and an `android/` folder in this repo (monorepo),
-or a second repo for the Android app. Write it down in an ADR.
-
-## First 15 minutes
-
-- [ ] Add teammates: **Settings → Collaborators**
-- [ ] Protect `main`: **Settings → Rules → Rulesets → New branch ruleset**. Target the default branch,
-      require a PR with **2 approvals** (1 for a team of 3), block force pushes. Enforcement: **Active**.
-- [ ] Create milestones `Sprint 1` through `Sprint 4`: **Issues → Milestones**
-- [ ] Create a Project board (Kanban) and link it: **Projects tab → Link a project**
-- [ ] Start `docs/proposal.md` on a branch:
-
-```bash
-git switch -c docs/proposal
-# edit docs/proposal.md
-git add docs/proposal.md
-git commit -m "Draft proposal"
-git push -u origin docs/proposal
-gh pr create --fill
-```
-
-## Working with the contract
-
-No installs needed beyond Node (`npx` runs the tools).
-
-```bash
-# Lint: fix every error before you open a PR
-npx @redocly/cli lint docs/openapi.yaml
-
-# Mock server: a fake API built from the contract, at http://127.0.0.1:4010
-npx @stoplight/prism-cli mock docs/openapi.yaml
-
-curl -H "Authorization: Bearer x" "http://127.0.0.1:4010/api/v1/workouts?page=0&size=20"
-curl -i http://127.0.0.1:4010/api/v1/workouts          # 401: no token
-curl -H "Authorization: Bearer x" -H "Prefer: code=404" \
-     http://127.0.0.1:4010/api/v1/workouts/42          # force an error response
-```
-
-The mock **validates** your requests and returns the `example:` values from the contract.
-**Nothing is saved**: a POST followed by a GET returns the example, not what you posted. The
-Android emulator reaches it at `http://10.0.2.2:4010`.
-
-To see the contract rendered, paste `docs/openapi.yaml` into https://editor.swagger.io.
+- Victoria Ha
+- Alexander Trujillo
+- Nikolii Proud
+- Hyun Jeong Lim
 
 ## Links
 
-- Project 02 prompt and rubric: Canvas → Project 02 module
-- OpenAPI 3.0 spec: https://spec.openapis.org/oas/v3.0.3
-- Prism: https://docs.stoplight.io/docs/prism
-- Mermaid ER diagrams: https://mermaid.js.org/syntax/entityRelationshipDiagram.html
-- RFC 9457 Problem Details: https://www.rfc-editor.org/rfc/rfc9457
+- Live API: https://brain-worm-api.onrender.com
+- Health check: https://brain-worm-api.onrender.com/actuator/health
+- API contract: `docs/openapi.yaml` (paste it into https://editor.swagger.io to see it)
+- ER diagram: `docs/erDiagram.md`
+
+The server can take a little while to wake up the first time.
+
+## Tech stack
+
+- Java 21 and Spring Boot
+- PostgreSQL with Flyway migrations
+- Google sign-in (the API checks Google ID tokens)
+- Docker and Render
+- JUnit and PMD, run by GitHub Actions
+
+## Endpoints
+
+All endpoints start with `/api/v1` and need a Google ID token:
+`Authorization: Bearer <token>`
+
+| Method | Path | What it does |
+|---|---|---|
+| GET | `/users/me` | Get my account. It is made the first time I sign in. |
+| DELETE | `/users/me` | Delete my account and my foods |
+| GET | `/registry` | List my foods (with paging) |
+| GET | `/registry/{itemId}` | Get one of my foods |
+| POST | `/registry` | Add a food |
+| PUT | `/registry/{itemId}` | Edit a food |
+| DELETE | `/registry/{itemId}` | Delete a food |
+| GET | `/recalls` | List FDA recalls. You can filter by product, contaminant, batch, or recallDate. |
+| GET | `/recalls/{recallId}` | Get one recall |
+| GET | `/users` | Admin only: list users |
+| GET | `/users/{userId}` | Admin only: get one user |
+| PATCH | `/users/{userId}` | Admin only: change a user's admin role |
+| DELETE | `/users/{userId}` | Admin only: delete a user |
+
+## How to run
+
+1. Clone the repo.
+   ```bash
+   git clone https://github.com/Niko-Proud/CST-438_Project_2_API.git
+   ```
+2. Make a `.env` file in the root folder with the Google client ID (ask the team). Don't commit this file.
+   ```properties
+   GOOGLE_CLIENT_ID=your-client-id
+   ```
+3. Start the API and the database with Docker.
+   ```bash
+   docker compose up --build
+   ```
+4. The API is now at http://localhost:8080. The Android emulator can reach it at `http://10.0.2.2:8080/`.
 
 ## Local CI and Docker testing
 
