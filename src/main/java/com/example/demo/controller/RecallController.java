@@ -33,26 +33,13 @@ public class RecallController {
         @RequestParam(required = false) String batch,
         @RequestParam(required = false) LocalDate recallDate, Pageable pageable,
         Authentication authentication) {
-
-        if (product != null) {
-            return repository.findByProductContainingIgnoreCase(product, pageable);
-        } 
-        else if (contaminant != null) {
-            return repository.findByContaminantContainingIgnoreCase(contaminant, pageable);
-        } 
-        else if (batch != null) {
-            return repository.findByBatch(batch, pageable);
-        } 
-        else if (recallDate != null) {
-            return repository.findByRecallDate(recallDate, pageable);
-        }
-
-        return repository.findAll(pageable);
+        return recallService.getFilteredRecalls(
+                product, contaminant, batch, recallDate, pageable);
     }
 
     @GetMapping("/recalls/{recallId}")
     /** Returns one recall or the contract's not-found response. */
     public RecalledFood getRecallById(@PathVariable Long recallId, Authentication authentication) {
-        return repository.findById(recallId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Recall not found"));
+        return recallService.getRecall(recallId);
     }
 }

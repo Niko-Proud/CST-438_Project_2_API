@@ -51,8 +51,9 @@ dependencies {
 	// Testcontainers
 	testImplementation("org.springframework.boot:spring-boot-testcontainers")
 	testImplementation(platform("org.testcontainers:testcontainers-bom:2.0.5"))
-	testImplementation("org.testcontainers:junit-jupiter")
-	testImplementation("org.testcontainers:postgresql")
+	// The BOM supplies the versions for Testcontainers' JUnit and PostgreSQL modules.
+	testImplementation("org.testcontainers:testcontainers-junit-jupiter")
+	testImplementation("org.testcontainers:testcontainers-postgresql")
 
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
