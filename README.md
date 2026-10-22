@@ -124,3 +124,87 @@ identical to GitHub-hosted runners.
 
 Testcontainers also requires Docker to be running. A Dockerfile build and a
 Compose run do not replace a Testcontainers integration test.
+
+## API usage
+
+### Base URLs
+
+- Local Docker image: `http://localhost:8080`
+- Production Render API: `https://brain-worm-api.onrender.com`
+
+### Health check
+
+```text
+GET https://brain-worm-api.onrender.com/actuator/health
+```
+
+Expected response:
+
+```json
+{"status":"UP"}
+```
+
+### Authenticated PowerShell setup
+
+```powershell
+$base = "https://brain-worm-api.onrender.com"
+$token = Read-Host "Paste Google bearer token"
+$headers = @{ Authorization = "Bearer $token" }
+```
+
+### Current user
+
+```text
+GET /api/v1/users/me
+DELETE /api/v1/users/me
+```
+
+```powershell
+Invoke-RestMethod "$base/api/v1/users/me" -Headers $headers
+```
+
+The delete route removes the authenticated account and its owned registry items.
+
+### Registry routes
+
+```text
+GET    /api/v1/registry?page=0&size=20
+POST   /api/v1/registry
+GET    /api/v1/registry/{itemId}
+PUT    /api/v1/registry/{itemId}
+DELETE /api/v1/registry/{itemId}
+```
+
+Example create request:
+
+```powershell
+$body = @{ product = "Organic Spinach"; batch = "LOT-123" } | ConvertTo-Json
+Invoke-RestMethod "$base/api/v1/registry" `
+  -Method Post -Headers $headers `
+  -ContentType "application/json" -Body $body
+```
+
+### Recall routes
+
+```text
+GET /api/v1/recalls?page=0&size=20
+GET /api/v1/recalls?product=spinach
+GET /api/v1/recalls/{recallId}
+```
+
+### Admin-only routes
+
+```text
+GET    /api/v1/users?page=0&size=20
+GET    /api/v1/users/{userId}
+PATCH  /api/v1/users/{userId}
+DELETE /api/v1/users/{userId}
+```
+
+### Notes
+
+- `/actuator/health` is public.
+- `/api/v1/**` requires a Google bearer token.
+- User administration routes also require database admin privileges.
+- Never commit bearer tokens, passwords, or `.env` contents.
+- Replace values in braces, such as `{itemId}`, with real IDs.
