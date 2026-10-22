@@ -35,6 +35,14 @@ public class User {
         this.username = username;
     }
 
+    public String getGoogleSub() {
+        return googleSub;
+    }
+
+    public void setGoogleSub(String googleSub) {
+        this.googleSub = googleSub;
+    }
+
     public boolean isAdmin() {
         return admin;
     }
