@@ -21,6 +21,10 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+    # Existing Supabase projects may already contain the tables without a
+    # Flyway history table. Flyway records that existing schema as version 1,
+    # then applies later migrations such as V2__add_google_subject.sql.
+    baseline-on-migrate: true
 
 # Render supplies PORT at runtime. The local default keeps development on 8080.
 server:

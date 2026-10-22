@@ -31,6 +31,12 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-webmvc")
 	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+	// Spring Boot runs the versioned SQL files in src/main/resources/db/migration
+	// when the application starts. PostgreSQL support is supplied separately.
+	// References: https://docs.spring.io/spring-boot/reference/using/build-systems.html
+	//            https://documentation.red-gate.com/fd/postgresql-database-277579325.html
+	implementation("org.springframework.boot:spring-boot-starter-flyway")
+	runtimeOnly("org.flywaydb:flyway-database-postgresql")
 	runtimeOnly("org.postgresql:postgresql")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 	runtimeOnly("org.postgresql:postgresql")
