@@ -31,6 +31,29 @@ BEGIN
     END LOOP;
 END $$;
 
+-- Older versions of the remote schema called this column "admin".
+-- Rename it before the remaining statements refer to the current entity name.
+-- The checks make this safe for both the legacy Supabase schema and databases
+-- already created from V1.
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = current_schema()
+          AND table_name = 'users'
+          AND column_name = 'admin'
+    ) AND NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = current_schema()
+          AND table_name = 'users'
+          AND column_name = 'is_admin'
+    ) THEN
+        ALTER TABLE users RENAME COLUMN admin TO is_admin;
+    END IF;
+END $$;
+
 -- Remove the old integer-only admin check before converting the column.
 DO $$
 DECLARE
