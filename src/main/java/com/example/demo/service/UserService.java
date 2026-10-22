@@ -59,7 +59,7 @@ public class UserService {
         return userRepository.save(user);
     }
   
-  public Page<User> listUsers(Pageable pageable) {
+    public Page<User> listUsers(Pageable pageable) {
         return userRepository.findAll(pageable);
     }
 

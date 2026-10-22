@@ -23,15 +23,37 @@ import org.springframework.security.core.Authentication;
 public class UserController {
     private static final String USER_NOT_FOUND = "User not found";
     private final UserRepository repository;
+
     public UserController(UserRepository repository) {
         this.repository = repository;
     }
 
+    /**
+     * Finds the caller using the verified Google token's subject.
+     */
     @GetMapping("/me")
-    /** Uses the verified JWT subject to retrieve the caller's database record. */
     public User getCurrentUser(Authentication authentication) {
-        return repository.findByUsername(authentication.getName())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, USER_NOT_FOUND));
+        return repository.findByGoogleSub(authentication.getName())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        USER_NOT_FOUND
+                ));
+    }
+
+    /**
+     * Checks the caller's database role before allowing admin operations.
+     */
+    private void requireAdmin(Authentication authentication) {
+        boolean admin = repository.findByGoogleSub(authentication.getName())
+                .map(User::isAdmin)
+                .orElse(false);
+
+        if (!admin) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Admin privileges required"
+            );
+        }
     }
 
     @GetMapping
@@ -63,14 +85,5 @@ public class UserController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, USER_NOT_FOUND);
         }
         repository.deleteById(userId);
-    }
-
-    private void requireAdmin(Authentication authentication) {
-        boolean admin = repository.findByUsername(authentication.getName())
-                .map(User::isAdmin)
-                .orElse(false);
-        if (!admin) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin privileges required");
-        }
     }
 }
