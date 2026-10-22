@@ -2,6 +2,8 @@ package com.example.demo.controller;
 import com.example.demo.entity.User;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.service.UserService;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -23,14 +25,18 @@ import org.springframework.security.core.Authentication;
 public class UserController {
     private static final String USER_NOT_FOUND = "User not found";
     private final UserRepository repository;
+    private final UserService userService;
 
-    public UserController(UserRepository repository) {
+    /** Supplies database access and the Google account-linking service. */
+    public UserController(
+            UserRepository repository,
+            UserService userService
+    ) {
         this.repository = repository;
+        this.userService = userService;
     }
 
-    /**
-     * Finds the caller using the verified Google token's subject.
-     */
+    /** Retrieves the caller's existing database profile by Google subject. */
     @GetMapping("/me")
     public User getCurrentUser(Authentication authentication) {
         return repository.findByGoogleSub(authentication.getName())
@@ -86,4 +92,17 @@ public class UserController {
         }
         repository.deleteById(userId);
     }
+
+    /**
+     * Finds or creates the caller's account after Google sign-in.
+     * Identity and first name come from the verified Google token.
+     */
+    @PostMapping("/me")
+    public User connectCurrentUser(@AuthenticationPrincipal Jwt jwt) {
+        return userService.connectGoogleAccount(
+                jwt.getSubject(),
+                jwt.getClaimAsString("given_name")
+        );
+    }
+
 }
