@@ -1,6 +1,6 @@
 package com.example.demo.controller;
 import com.example.demo.entity.RecalledFood;
-import com.example.demo.repository.RecalledFoodRepository;
+import com.example.demo.service.RecallService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
@@ -19,10 +19,10 @@ import java.time.LocalDate;
  * API contract: docs/openapi.yaml
  */
 public class RecallController {
-    private final RecalledFoodRepository repository;
+    private final RecallService recallService;
 
-    public RecallController(RecalledFoodRepository repository) {
-        this.repository = repository;
+    public RecallController(RecallService recallService) {
+        this.recallService = recallService;
     }
 
     @GetMapping("/recalls")
