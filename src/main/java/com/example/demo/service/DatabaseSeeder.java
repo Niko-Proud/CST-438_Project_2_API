@@ -19,6 +19,9 @@ import java.time.format.DateTimeFormatter;
 @Component
 public class DatabaseSeeder implements CommandLineRunner {
     private static final int SEED_COLUMN_COUNT = 5;
+    private static final int NEXT_CHARACTER_OFFSET = 1;
+    private static final char QUOTE_CHARACTER = '"';
+    private static final char CSV_SEPARATOR = ',';
     private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseSeeder.class);
 
     private final RecalledFoodRepository recalledFoodRepository;
@@ -68,7 +71,9 @@ public class DatabaseSeeder implements CommandLineRunner {
                 }
                 LOGGER.info("FDA recalls successfully imported.");
             } catch (Exception e) {
-                LOGGER.error("Error seeding database: {}", e.getMessage(), e);
+                if (LOGGER.isErrorEnabled()) {
+                    LOGGER.error("Error seeding database: {}", e.getMessage(), e);
+                }
             }
         }
     }
@@ -94,14 +99,15 @@ public class DatabaseSeeder implements CommandLineRunner {
         int index = 0;
         while (index < line.length()) {
             char current = line.charAt(index);
-            if (current == '"') {
-                if (quoted && index + 1 < line.length() && line.charAt(index + 1) == '"') {
-                    value.append('"');
-                    index++;
+            if (current == QUOTE_CHARACTER) {
+                if (quoted && index + NEXT_CHARACTER_OFFSET < line.length()
+                        && line.charAt(index + NEXT_CHARACTER_OFFSET) == QUOTE_CHARACTER) {
+                    value.append(QUOTE_CHARACTER);
+                    index += NEXT_CHARACTER_OFFSET;
                 } else {
                     quoted = !quoted;
                 }
-            } else if (current == ',' && !quoted) {
+            } else if (current == CSV_SEPARATOR && !quoted) {
                 values.add(value.toString().trim());
                 value.setLength(0);
             } else {
