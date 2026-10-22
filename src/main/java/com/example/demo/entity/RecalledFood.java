@@ -1,5 +1,7 @@
 package com.example.demo.entity;
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDate;
 
 @Entity
@@ -9,8 +11,11 @@ public class RecalledFood {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // The registry relationship is represented by registryItemId in API
+    // responses rather than serializing the entire parent object.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "registry_item_id")
+    @JsonIgnore
     private RegistryItem registryItem;
 
     @Column(nullable = false, length = 200)
@@ -82,5 +87,11 @@ public class RecalledFood {
 
     public void setRegistryItem(RegistryItem registryItem) {
         this.registryItem = registryItem;
+    }
+
+    /** Exposes the foreign-key value without serializing the whole registry item. */
+    @JsonProperty("registryItemId")
+    public Long getRegistryItemId() {
+        return registryItem == null ? null : registryItem.getId();
     }
 }

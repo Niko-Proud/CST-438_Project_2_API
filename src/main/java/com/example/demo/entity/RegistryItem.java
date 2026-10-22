@@ -1,5 +1,7 @@
 package com.example.demo.entity;
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 @Entity
@@ -9,8 +11,11 @@ public class RegistryItem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // The owner is represented by userId in API responses rather than a nested
+    // User object, preventing a circular JSON graph.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore
     private User user;
 
     @Column(nullable = false, length = 200)
@@ -20,6 +25,7 @@ public class RegistryItem {
     private String batch;
 
     @OneToMany(mappedBy = "registryItem", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<RecalledFood> recalledFoods;
 
     public Long getId() {
@@ -36,6 +42,12 @@ public class RegistryItem {
 
     public void setUser(User user) {
         this.user = user;
+    }
+
+    /** Exposes the foreign-key value without serializing the whole User object. */
+    @JsonProperty("userId")
+    public Long getUserId() {
+        return user == null ? null : user.getId();
     }
 
     public String getProduct() {
