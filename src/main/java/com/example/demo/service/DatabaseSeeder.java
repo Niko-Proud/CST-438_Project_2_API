@@ -5,6 +5,8 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.util.StringUtils;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -16,6 +18,9 @@ import java.time.format.DateTimeFormatter;
 
 @Component
 public class DatabaseSeeder implements CommandLineRunner {
+    private static final int SEED_COLUMN_COUNT = 5;
+    private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseSeeder.class);
+
     private final RecalledFoodRepository recalledFoodRepository;
 
     public DatabaseSeeder(RecalledFoodRepository recalledFoodRepository) {
@@ -27,26 +32,28 @@ public class DatabaseSeeder implements CommandLineRunner {
         if (recalledFoodRepository.count() == 0) {
             ClassPathResource csv = new ClassPathResource("fda_recalls.csv");
             if (!csv.exists()) {
-                System.err.println("FDA recall seed file was not found; skipping import.");
+                LOGGER.warn("FDA recall seed file was not found; skipping import.");
                 return;
             }
 
             try (BufferedReader br = new BufferedReader(
                     new InputStreamReader(csv.getInputStream(), StandardCharsets.UTF_8))) {
-                String line;
                 String header = br.readLine();
                 if (header == null || !isExpectedSeedFormat(parseCsvLine(header))) {
-                    System.err.println("FDA recall seed file does not match the API seed format; skipping import.");
+                    LOGGER.warn("FDA recall seed file does not match the API seed format; skipping import.");
                     return;
                 }
 
-                while ((line = br.readLine()) != null) {
+                String line = br.readLine();
+                while (line != null) {
                     if (!StringUtils.hasText(line)) {
+                        line = br.readLine();
                         continue;
                     }
                     List<String> data = parseCsvLine(line);
-                    if (data.size() != 5) {
-                        System.err.println("Skipping malformed FDA recall seed row.");
+                    if (data.size() != SEED_COLUMN_COUNT) {
+                        LOGGER.warn("Skipping malformed FDA recall seed row.");
+                        line = br.readLine();
                         continue;
                     }
 
@@ -57,16 +64,17 @@ public class DatabaseSeeder implements CommandLineRunner {
                     recall.setManuDate(LocalDate.parse(data.get(3), DateTimeFormatter.ISO_LOCAL_DATE));
                     recall.setBatch(StringUtils.hasText(data.get(4)) ? data.get(4) : null);
                     recalledFoodRepository.save(recall);
+                    line = br.readLine();
                 }
-                System.out.println("FDA recalls successfully imported!");
+                LOGGER.info("FDA recalls successfully imported.");
             } catch (Exception e) {
-                System.err.println("Error seeding database: " + e.getMessage());
+                LOGGER.error("Error seeding database: {}", e.getMessage(), e);
             }
         }
     }
 
     private boolean isExpectedSeedFormat(List<String> header) {
-        return header.size() == 5
+        return header.size() == SEED_COLUMN_COUNT
                 && "product".equalsIgnoreCase(header.get(0))
                 && "contaminant".equalsIgnoreCase(header.get(1))
                 && "recall_date".equalsIgnoreCase(header.get(2))
@@ -83,7 +91,8 @@ public class DatabaseSeeder implements CommandLineRunner {
         StringBuilder value = new StringBuilder();
         boolean quoted = false;
 
-        for (int index = 0; index < line.length(); index++) {
+        int index = 0;
+        while (index < line.length()) {
             char current = line.charAt(index);
             if (current == '"') {
                 if (quoted && index + 1 < line.length() && line.charAt(index + 1) == '"') {
@@ -98,6 +107,7 @@ public class DatabaseSeeder implements CommandLineRunner {
             } else {
                 value.append(current);
             }
+            index++;
         }
 
         if (quoted) {
