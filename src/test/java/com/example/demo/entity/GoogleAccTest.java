@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 /** Tests Google account linking without a database or real Google tokens. */
 class GoogleAccountLinkingTest {
@@ -23,11 +24,13 @@ class GoogleAccountLinkingTest {
     private UserRepository repository;
     private UserService service;
 
-    /** Gives each test a fresh repository mock and service. */
+    /** Supplies mock dependencies without starting Spring or contacting Google. */
     @BeforeEach
     void setUp() {
         repository = mock(UserRepository.class);
-        service = new UserService(repository);
+        JwtDecoder jwtDecoder = mock(JwtDecoder.class);
+
+        service = new UserService(repository, jwtDecoder);
     }
 
     /** First login creates a normie with a name and four-digit suffix. */
