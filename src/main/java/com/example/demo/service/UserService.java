@@ -5,11 +5,14 @@ import com.example.demo.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.transaction.annotation.Transactional;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Encapsulates user lookup and user-record operations that can be tested
@@ -33,9 +36,11 @@ public class UserService {
     private static final String USER_NOT_FOUND = "User not found";
 
     private final UserRepository userRepository;
+    private final JwtDecoder jwtDecoder;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, JwtDecoder jwtDecoder) {
         this.userRepository = userRepository;
+        this.jwtDecoder = jwtDecoder;
     }
 
     /**
@@ -90,8 +95,52 @@ public class UserService {
         return userRepository.save(user);
     }
   
-  public Page<User> listUsers(Pageable pageable) {
+    public Page<User> listUsers(Pageable pageable) {
         return userRepository.findAll(pageable);
+    }
+    /**
+     * Finds an existing Google-linked account or creates a normie.
+     * New usernames combine Google's given name with a four-digit number.
+     * Existing usernames and admin privileges remain unchanged.
+     */
+    @Transactional
+    public User connectGoogleAccount(String googleSub, String givenName) {
+        if (googleSub == null || googleSub.isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Google account identifier is missing"
+            );
+        }
+
+        // Previous version was failing PMD
+        return userRepository.findByGoogleSub(googleSub)
+        .orElseGet(() -> {
+            String firstName =
+                    givenName == null || givenName.isBlank()
+                            ? "User"
+                            : givenName.strip();
+
+            // Bound the attempts so username selection cannot loop forever.
+            for (int attempt = 0; attempt < 25; attempt++) {
+                int number = ThreadLocalRandom.current().nextInt(10000);
+                String username = firstName
+                        + String.format(java.util.Locale.ROOT, "%04d", number);
+
+                if (userRepository.findByUsername(username).isEmpty()) {
+                    User user = new User();
+                    user.setGoogleSub(googleSub);
+                    user.setUsername(username);
+                    user.setAdmin(false);
+
+                    return userRepository.save(user);
+                }
+            }
+
+            throw new ResponseStatusException(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "Could not assign a username. Please try again."
+            );
+        });
     }
 
     /**

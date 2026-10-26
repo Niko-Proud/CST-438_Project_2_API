@@ -2,6 +2,8 @@ package com.example.demo.controller;
 import com.example.demo.entity.User;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.service.UserService;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -28,16 +30,38 @@ public class UserController {
     private final UserRepository repository;
     private final UserService userService;
 
-    public UserController(UserRepository repository, UserService userService) {
+    /** Supplies database access and the Google account-linking service. */
+    public UserController(
+            UserRepository repository,
+            UserService userService
+    ) {
         this.repository = repository;
         this.userService = userService;
     }
 
-    @GetMapping("/me")
-    /** Uses the verified JWT subject to retrieve the caller's database record. */
-    public User getCurrentUser(Authentication authentication) {
-        return userService.getOrCreateFromAuthentication(authentication);
-    }
+ 
+ /**
+ * Retrieves or creates the caller's database profile.
+ *
+ * The previous controller implementation performed the Google-sub lookup
+ * directly and returned 404 when no record existed. That implementation is
+ * preserved below for reference. UserService now handles the lookup, legacy
+ * username fallback, and first-login profile creation.
+ */
+@GetMapping("/me")
+public User getCurrentUser(Authentication authentication) {
+    /*
+     * Previous implementation:
+     *
+     * return repository.findByGoogleSub(authentication.getName())
+     *         .orElseThrow(() -> new ResponseStatusException(
+     *                 HttpStatus.NOT_FOUND,
+     *                 USER_NOT_FOUND
+     *         ));
+     */
+
+    return userService.getOrCreateFromAuthentication(authentication);
+}
 
     /** Deletes the authenticated account and its cascade-owned registry records. */
     @DeleteMapping("/me")
@@ -46,8 +70,8 @@ public class UserController {
         userService.deleteCurrentUser(authentication);
     }
 
-    @GetMapping
     /** Lists users only after confirming that the caller is an administrator. */
+    @GetMapping
     public Page<User> listUsers(Pageable pageable, Authentication authentication) {
         requireAdmin(authentication);
         return repository.findAll(pageable);
@@ -77,13 +101,33 @@ public class UserController {
         repository.deleteById(userId);
     }
 
+    /**
+     * Finds or creates the caller's account after Google sign-in.
+     * Identity and first name come from the verified Google token.
+     */
+    @PostMapping("/me")
+    public User connectCurrentUser(@AuthenticationPrincipal Jwt jwt) {
+        return userService.connectGoogleAccount(
+                jwt.getSubject(),
+                jwt.getClaimAsString("given_name")
+        );
+  
+
+}
+
+    /**
+     * Checks the caller's database role before allowing admin operations.
+     */
     private void requireAdmin(Authentication authentication) {
         boolean admin = repository.findByGoogleSub(authentication.getName())
                 .or(() -> repository.findByUsername(authentication.getName()))
                 .map(User::isAdmin)
                 .orElse(false);
         if (!admin) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin privileges required");
+            throw new ResponseStatusException(
+              HttpStatus.FORBIDDEN, 
+              "Admin privileges required"
+            );
         }
     }
 }

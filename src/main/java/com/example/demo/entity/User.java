@@ -1,4 +1,5 @@
 package com.example.demo.entity;
+
 import java.util.List;
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -7,12 +8,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @Entity
 @Table(name = "users")
 public class User {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(unique = true, nullable = false)
-    private String username; 
+    private String username;
 
     // Google's stable OpenID Connect subject identifies the account without
     // storing a short-lived bearer or ID token in the database.
@@ -20,9 +22,11 @@ public class User {
     @JsonIgnore
     private String googleSub;
 
+    // New users default to false, making them normies.
     @Column(name = "is_admin", nullable = false)
     private boolean admin;
 
+    // Registry items belong to this user and are removed when deleted.
     // Do not serialize the back-reference; otherwise User -> RegistryItem -> User
     // creates a recursive JSON response. Codex assisted with documenting this
     // serialization boundary while preserving the JPA relationship.
