@@ -141,6 +141,7 @@ public class UserService {
                     "Could not assign a username. Please try again."
             );
         });
+    }
 
     /**
      * Deletes a user only when the requested record exists.
