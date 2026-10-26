@@ -15,13 +15,30 @@ import java.util.ArrayList;
 import java.util.List;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
+/**
+ * Loads the checked-in FDA export into the recall table when it is empty.
+ * Codex was used to adapt this importer from the original five-column seed
+ * format to the current 25-column FDA export and to document the field mapping.
+ */
 @Component
 public class DatabaseSeeder implements CommandLineRunner {
     private static final int SEED_COLUMN_COUNT = 5;
+    private static final int FDA_COLUMN_COUNT = 25;
+    private static final int FDA_PRODUCT_INDEX = 17;
+    private static final int FDA_CONTAMINANT_INDEX = 19;
+    private static final int FDA_RECALL_DATE_INDEX = 20;
+    private static final int FDA_MANU_DATE_INDEX = 21;
+    private static final int FDA_BATCH_INDEX = 24;
+    private static final int MAX_PRODUCT_LENGTH = 200;
+    private static final int MAX_CONTAMINANT_LENGTH = 255;
+    private static final int MAX_BATCH_LENGTH = 100;
     private static final int NEXT_CHARACTER_OFFSET = 1;
     private static final char QUOTE_CHARACTER = '"';
     private static final char CSV_SEPARATOR = ',';
+    private static final DateTimeFormatter FDA_DATE_FORMAT =
+            DateTimeFormatter.ofPattern("MM/dd/yyyy");
     private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseSeeder.class);
 
     private final RecalledFoodRepository recalledFoodRepository;
@@ -42,7 +59,9 @@ public class DatabaseSeeder implements CommandLineRunner {
             try (BufferedReader br = new BufferedReader(
                     new InputStreamReader(csv.getInputStream(), StandardCharsets.UTF_8))) {
                 String header = br.readLine();
-                if (header == null || !isExpectedSeedFormat(parseCsvLine(header))) {
+                List<String> headerValues = header == null ? List.of() : parseCsvLine(header);
+                boolean fdaFormat = isFdaSeedFormat(headerValues);
+                if (header == null || (!isExpectedSeedFormat(headerValues) && !fdaFormat)) {
                     LOGGER.warn("FDA recall seed file does not match the API seed format; skipping import.");
                     return;
                 }
@@ -54,19 +73,19 @@ public class DatabaseSeeder implements CommandLineRunner {
                         continue;
                     }
                     List<String> data = parseCsvLine(line);
-                    if (data.size() != SEED_COLUMN_COUNT) {
+                    int expectedColumnCount = fdaFormat ? FDA_COLUMN_COUNT : SEED_COLUMN_COUNT;
+                    if (data.size() != expectedColumnCount) {
                         LOGGER.warn("Skipping malformed FDA recall seed row.");
                         line = br.readLine();
                         continue;
                     }
 
-                    RecalledFood recall = new RecalledFood();
-                    recall.setProduct(data.get(0));
-                    recall.setContaminant(data.get(1));
-                    recall.setRecallDate(LocalDate.parse(data.get(2), DateTimeFormatter.ISO_LOCAL_DATE));
-                    recall.setManuDate(LocalDate.parse(data.get(3), DateTimeFormatter.ISO_LOCAL_DATE));
-                    recall.setBatch(StringUtils.hasText(data.get(4)) ? data.get(4) : null);
-                    recalledFoodRepository.save(recall);
+                    RecalledFood recall = fdaFormat
+                            ? createFromFdaRow(data)
+                            : createFromSeedRow(data);
+                    if (recall != null) {
+                        recalledFoodRepository.save(recall);
+                    }
                     line = br.readLine();
                 }
                 LOGGER.info("FDA recalls successfully imported.");
@@ -85,6 +104,58 @@ public class DatabaseSeeder implements CommandLineRunner {
                 && "recall_date".equalsIgnoreCase(header.get(2))
                 && "manu_date".equalsIgnoreCase(header.get(3))
                 && "batch".equalsIgnoreCase(header.get(4));
+    }
+
+    private boolean isFdaSeedFormat(List<String> header) {
+        return header.size() == FDA_COLUMN_COUNT
+                && "Product Description".equalsIgnoreCase(header.get(FDA_PRODUCT_INDEX))
+                && "Reason for Recall".equalsIgnoreCase(header.get(FDA_CONTAMINANT_INDEX))
+                && "Recall Initiation Date".equalsIgnoreCase(header.get(FDA_RECALL_DATE_INDEX));
+    }
+
+    private RecalledFood createFromSeedRow(List<String> data) {
+        RecalledFood recall = new RecalledFood();
+        recall.setProduct(data.get(0));
+        recall.setContaminant(data.get(1));
+        recall.setRecallDate(LocalDate.parse(data.get(2), DateTimeFormatter.ISO_LOCAL_DATE));
+        recall.setManuDate(LocalDate.parse(data.get(3), DateTimeFormatter.ISO_LOCAL_DATE));
+        recall.setBatch(StringUtils.hasText(data.get(4)) ? data.get(4) : null);
+        return recall;
+    }
+
+    private RecalledFood createFromFdaRow(List<String> data) {
+        LocalDate recallDate = parseFdaDate(data.get(FDA_RECALL_DATE_INDEX), null);
+        if (recallDate == null) {
+            LOGGER.warn("Skipping FDA recall row without a valid recall date.");
+            return null;
+        }
+
+        RecalledFood recall = new RecalledFood();
+        recall.setProduct(limit(data.get(FDA_PRODUCT_INDEX), MAX_PRODUCT_LENGTH));
+        recall.setContaminant(limit(data.get(FDA_CONTAMINANT_INDEX), MAX_CONTAMINANT_LENGTH));
+        recall.setRecallDate(recallDate);
+        // FDA does not provide a manufacturing date in this export. The
+        // classification date is the closest available event date; when it is
+        // unavailable, retaining the recall date keeps the required field valid.
+        recall.setManuDate(parseFdaDate(data.get(FDA_MANU_DATE_INDEX), recallDate));
+        recall.setBatch(limit(data.get(FDA_BATCH_INDEX), MAX_BATCH_LENGTH));
+        return recall;
+    }
+
+    private LocalDate parseFdaDate(String value, LocalDate fallback) {
+        if (!StringUtils.hasText(value) || "N/A".equalsIgnoreCase(value.trim())) {
+            return fallback;
+        }
+        try {
+            return LocalDate.parse(value.trim(), FDA_DATE_FORMAT);
+        } catch (DateTimeParseException exception) {
+            return fallback;
+        }
+    }
+
+    private String limit(String value, int maximumLength) {
+        String trimmed = value == null ? "" : value.trim();
+        return trimmed.length() > maximumLength ? trimmed.substring(0, maximumLength) : trimmed;
     }
 
     /**

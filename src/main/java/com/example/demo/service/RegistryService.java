@@ -17,6 +17,9 @@ import org.springframework.web.server.ResponseStatusException;
  * service resolves that subject to a database user and never accepts an owner
  * ID from request JSON. Spring Data binds repository arguments as SQL
  * parameters, so these lookups do not concatenate user input into SQL.
+ * User ownership lookup accepts the Google subject first and retains the
+ * legacy username fallback for records created before OAuth linking.
+ * Codex assisted with this identity-lookup adjustment and its documentation.
  *
  * Service-layer guidance:
  * https://docs.spring.io/spring-framework/reference/core/beans/classpath-scanning.html
@@ -35,7 +38,7 @@ public class RegistryService {
 
     public Page<RegistryItem> getMyRegistry(String username, Pageable pageable) {
         User owner = findUser(username);
-        return registryItemRepository.findByUserId(owner.getId(), pageable);
+        return registryItemRepository.findByUser_Id(owner.getId(), pageable);
     }
 
     public RegistryItem createItem(String username, RegistryItem newItem) {
@@ -61,12 +64,14 @@ public class RegistryService {
     }
 
     private User findUser(String username) {
-        return userRepository.findByUsername(username)
+        return userRepository.findByGoogleSub(username)
+                .or(() -> userRepository.findByUsername(username))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
     }
 
     private RegistryItem ownedItem(String username, Long itemId) {
-        return registryItemRepository.findByIdAndUserUsername(itemId, username)
+        User owner = findUser(username);
+        return registryItemRepository.findByIdAndUser_Id(itemId, owner.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ITEM_NOT_FOUND));
     }
 

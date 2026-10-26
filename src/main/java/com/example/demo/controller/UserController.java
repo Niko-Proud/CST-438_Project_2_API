@@ -19,6 +19,9 @@ import org.springframework.security.core.Authentication;
  * Authentication is enforced by SecurityConfig before these methods run.
  * Administrator status is read from the database rather than accepted from
  * the request body, so a regular user cannot promote themselves.
+ * The /me endpoint also provisions a first-login Google user and supports
+ * deleting that authenticated user's account.
+ * Codex assisted with the route implementation and the explanatory comments.
  *
  * API contract: docs/openapi.yaml
  */
@@ -36,34 +39,39 @@ public class UserController {
         this.userService = userService;
     }
 
-    /** Retrieves the caller's existing database profile by Google subject. */
-    @GetMapping("/me")
-    public User getCurrentUser(Authentication authentication) {
-        return repository.findByGoogleSub(authentication.getName())
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        USER_NOT_FOUND
-                ));
-    }
-
-    /**
-     * Checks the caller's database role before allowing admin operations.
+ 
+ /**
+ * Retrieves or creates the caller's database profile.
+ *
+ * The previous controller implementation performed the Google-sub lookup
+ * directly and returned 404 when no record existed. That implementation is
+ * preserved below for reference. UserService now handles the lookup, legacy
+ * username fallback, and first-login profile creation.
+ */
+@GetMapping("/me")
+public User getCurrentUser(Authentication authentication) {
+    /*
+     * Previous implementation:
+     *
+     * return repository.findByGoogleSub(authentication.getName())
+     *         .orElseThrow(() -> new ResponseStatusException(
+     *                 HttpStatus.NOT_FOUND,
+     *                 USER_NOT_FOUND
+     *         ));
      */
-    private void requireAdmin(Authentication authentication) {
-        boolean admin = repository.findByGoogleSub(authentication.getName())
-                .map(User::isAdmin)
-                .orElse(false);
 
-        if (!admin) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
-                    "Admin privileges required"
-            );
-        }
+    return userService.getOrCreateFromAuthentication(authentication);
+}
+
+    /** Deletes the authenticated account and its cascade-owned registry records. */
+    @DeleteMapping("/me")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteCurrentUser(Authentication authentication) {
+        userService.deleteCurrentUser(authentication);
     }
 
-    @GetMapping
     /** Lists users only after confirming that the caller is an administrator. */
+    @GetMapping
     public Page<User> listUsers(Pageable pageable, Authentication authentication) {
         requireAdmin(authentication);
         return repository.findAll(pageable);
@@ -103,6 +111,23 @@ public class UserController {
                 jwt.getSubject(),
                 jwt.getClaimAsString("given_name")
         );
-    }
+  
 
+}
+
+    /**
+     * Checks the caller's database role before allowing admin operations.
+     */
+    private void requireAdmin(Authentication authentication) {
+        boolean admin = repository.findByGoogleSub(authentication.getName())
+                .or(() -> repository.findByUsername(authentication.getName()))
+                .map(User::isAdmin)
+                .orElse(false);
+        if (!admin) {
+            throw new ResponseStatusException(
+              HttpStatus.FORBIDDEN, 
+              "Admin privileges required"
+            );
+        }
+    }
 }
