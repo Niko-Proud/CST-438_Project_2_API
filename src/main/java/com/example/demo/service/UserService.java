@@ -112,37 +112,35 @@ public class UserService {
             );
         }
 
+        // Previous version was failing PMD
         return userRepository.findByGoogleSub(googleSub)
-                .orElseGet(() -> {
-                    String firstName =
-                            givenName == null || givenName.isBlank()
-                                    ? "User"
-                                    : givenName.strip();
+        .orElseGet(() -> {
+            String firstName =
+                    givenName == null || givenName.isBlank()
+                            ? "User"
+                            : givenName.strip();
 
-                    // Bound the attempts so username selection cannot loop forever.
-                    for (int attempt = 0; attempt < 25; attempt++) {
-                        int number = ThreadLocalRandom.current().nextInt(10000);
-                        String username = firstName
-                                + String.format(java.util.Locale.ROOT, "%04d", number);
+            // Bound the attempts so username selection cannot loop forever.
+            for (int attempt = 0; attempt < 25; attempt++) {
+                int number = ThreadLocalRandom.current().nextInt(10000);
+                String username = firstName
+                        + String.format(java.util.Locale.ROOT, "%04d", number);
 
-                        if (userRepository.findByUsername(username).isPresent()) {
-                            continue;
-                        }
+                if (userRepository.findByUsername(username).isEmpty()) {
+                    User user = new User();
+                    user.setGoogleSub(googleSub);
+                    user.setUsername(username);
+                    user.setAdmin(false);
 
-                        User user = new User();
-                        user.setGoogleSub(googleSub);
-                        user.setUsername(username);
-                        user.setAdmin(false);
+                    return userRepository.save(user);
+                }
+            }
 
-                        return userRepository.save(user);
-                    }
-
-                    throw new ResponseStatusException(
-                            HttpStatus.SERVICE_UNAVAILABLE,
-                            "Could not assign a username. Please try again."
-                    );
-                });
-    }
+            throw new ResponseStatusException(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "Could not assign a username. Please try again."
+            );
+        });
 
     /**
      * Deletes a user only when the requested record exists.
